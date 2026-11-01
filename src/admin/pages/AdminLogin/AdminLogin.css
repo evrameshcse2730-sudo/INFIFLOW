@@ -1,0 +1,245 @@
+
+.admin-login-page {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  padding: 30px 20px;
+  background: #f8fbff;
+  font-family: "Inter", sans-serif;
+}
+
+.login-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  pointer-events: none;
+  animation: glowFloat 8s ease-in-out infinite alternate;
+}
+
+.login-glow-one {
+  width: 420px;
+  height: 420px;
+  background: rgba(0, 153, 255, 0.17);
+  top: -130px;
+  left: -100px;
+}
+
+.login-glow-two {
+  width: 400px;
+  height: 400px;
+  background: rgba(0, 210, 255, 0.13);
+  bottom: -150px;
+  right: -100px;
+  animation-delay: 2s;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 48px 42px;
+  position: relative;
+  z-index: 2;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.76);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 25px 80px rgba(25, 105, 170, 0.12);
+  animation: cardAppear 0.7s ease both;
+}
+
+.login-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 45px;
+  color: #087fc2;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 3px;
+}
+
+.brand-symbol {
+  font-size: 38px;
+  line-height: 1;
+  color: #00a9e8;
+}
+
+.login-heading {
+  text-align: center;
+  margin-bottom: 35px;
+}
+
+.login-tag {
+  color: #008fce;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 3px;
+}
+
+.login-heading h1 {
+  margin: 13px 0 10px;
+  color: #12344e;
+  font-size: 34px;
+  font-weight: 750;
+  letter-spacing: -1.3px;
+}
+
+.login-heading p {
+  color: #8193a3;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 23px;
+}
+
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.login-field label {
+  color: #31536c;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.login-field input {
+  width: 100%;
+  height: 52px;
+  padding: 0 16px;
+  border: 1px solid #e1ebf3;
+  border-radius: 11px;
+  outline: none;
+  background: rgba(248, 251, 255, 0.9);
+  color: #173c56;
+  font-size: 14px;
+  transition: 0.3s ease;
+}
+
+.login-field input::placeholder {
+  color: #a6b5c2;
+}
+
+.login-field input:focus {
+  border-color: #00a5e5;
+  box-shadow: 0 0 0 4px rgba(0, 165, 229, 0.1);
+  background: #fff;
+}
+
+.login-button {
+  width: 100%;
+  height: 54px;
+  margin-top: 7px;
+  border: none;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: linear-gradient(110deg, #087fc2, #00b8e8);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 10px 25px rgba(0, 153, 220, 0.2);
+  transition: 0.3s ease;
+}
+
+.login-button:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 30px rgba(0, 153, 220, 0.3);
+}
+
+.login-button span {
+  font-size: 21px;
+}
+
+.login-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.login-error {
+  margin: -10px 0 0;
+  color: #d9364f;
+  font-size: 13px;
+}
+
+.login-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 30px;
+  color: #91a2b0;
+  font-size: 12px;
+}
+
+.footer-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #21b98b;
+  box-shadow: 0 0 10px rgba(33, 185, 139, 0.5);
+}
+
+.login-copyright {
+  position: absolute;
+  bottom: 18px;
+  z-index: 2;
+  color: #9aabba;
+  font-size: 11px;
+  text-align: center;
+}
+
+@keyframes glowFloat {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(35px, 25px);
+  }
+}
+
+@keyframes cardAppear {
+  from {
+    opacity: 0;
+    transform: translateY(25px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 480px) {
+  .login-card {
+    padding: 38px 25px;
+  }
+
+  .login-heading h1 {
+    font-size: 29px;
+  }
+
+  .login-brand {
+    margin-bottom: 35px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-card,
+  .login-glow {
+    animation: none;
+  }
+}
