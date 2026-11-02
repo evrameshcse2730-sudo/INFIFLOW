@@ -1,0 +1,410 @@
+
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import {
+  Plus,
+  Search,
+  BookOpen,
+  Pencil,
+  Trash2,
+  X,
+  ImagePlus,
+} from "lucide-react";
+
+import {
+  collection,
+  addDoc,
+  getDocs,
+  updateDoc,
+  deleteDoc,
+  doc,
+  serverTimestamp,
+} from "firebase/firestore";
+
+import { db } from "../../../firebase/firebase";
+import "./CoursesManager.css";
+
+const initialForm = {
+  title: "",
+  description: "",
+  category: "",
+  price: "",
+  banner: "",
+  status: "Published",
+};
+
+function CoursesManager() {
+  const [courses, setCourses] = useState([]);
+  const [search, setSearch] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [formData, setFormData] = useState(initialForm);
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  // Fetch courses from Firestore
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        setLoading(true);
+
+        const snapshot = await getDocs(collection(db, "courses"));
+
+        const courseList = snapshot.docs.map((item) => ({
+          id: item.id,
+          ...item.data(),
+        }));
+
+        setCourses(courseList);
+      } catch (err) {
+        console.error("Courses fetch error:", err);
+        setError("Unable to load courses. Please check Firestore permissions.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCourses();
+  }, []);
+
+  const resetForm = () => {
+    setFormData(initialForm);
+    setEditingId(null);
+    setShowForm(false);
+    setError("");
+  };
+
+  // Add or update course
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setError("");
+
+    try {
+      const courseData = {
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        category: formData.category.trim(),
+        price: Number(formData.price),
+        banner: formData.banner.trim(),
+        status: formData.status,
+        updatedAt: serverTimestamp(),
+      };
+
+      if (editingId) {
+        await updateDoc(doc(db, "courses", editingId), courseData);
+
+        setCourses((prev) =>
+          prev.map((course) =>
+            course.id === editingId
+              ? { ...course, ...courseData }
+              : course
+          )
+        );
+      } else {
+        const docRef = await addDoc(collection(db, "courses"), {
+          ...courseData,
+          createdAt: serverTimestamp(),
+        });
+
+        setCourses((prev) => [
+          ...prev,
+          { ...courseData, id: docRef.id },
+        ]);
+      }
+
+      resetForm();
+    } catch (err) {
+      console.error("Course save error:", err);
+      setError("Course could not be saved. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Edit course
+  const handleEdit = (course) => {
+    setFormData({
+      title: course.title || "",
+      description: course.description || "",
+      category: course.category || "",
+      price: course.price ?? "",
+      banner: course.banner || "",
+      status: course.status || "Published",
+    });
+
+    setEditingId(course.id);
+    setShowForm(true);
+    setError("");
+  };
+
+  // Delete course
+  const handleDelete = async (id) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this course?"
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await deleteDoc(doc(db, "courses", id));
+
+      setCourses((prev) =>
+        prev.filter((course) => course.id !== id)
+      );
+    } catch (err) {
+      console.error("Course delete error:", err);
+      setError("Unable to delete course. Please try again.");
+    }
+  };
+
+  const filteredCourses = courses.filter((course) =>
+    (course.title || "")
+      .toLowerCase()
+      .includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="courses-manager">
+      <div className="courses-heading">
+        <div>
+          <span className="courses-eyebrow">CONTENT MANAGEMENT</span>
+          <h1>Courses</h1>
+          <p>Create and manage your learning programs.</p>
+        </div>
+
+        <button
+          className="add-course-btn"
+          onClick={() => {
+            resetForm();
+            setShowForm(true);
+          }}
+        >
+          <Plus size={18} />
+          Add New Course
+        </button>
+      </div>
+
+      <div className="courses-stats">
+        <div className="course-stat-card">
+          <BookOpen size={22} />
+          <div>
+            <h2>{courses.length}</h2>
+            <p>Total Courses</p>
+          </div>
+        </div>
+      </div>
+
+      {error && <p className="login-error">{error}</p>}
+
+      <div className="courses-toolbar">
+        <div className="courses-search">
+          <Search size={18} />
+          <input
+            type="text"
+            placeholder="Search courses..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="courses-table-wrapper">
+        <table className="courses-table">
+          <thead>
+            <tr>
+              <th>COURSE</th>
+              <th>CATEGORY</th>
+              <th>PRICE</th>
+              <th>STATUS</th>
+              <th>ACTIONS</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan="5" className="courses-empty">
+                  Loading courses...
+                </td>
+              </tr>
+            ) : filteredCourses.length === 0 ? (
+              <tr>
+                <td colSpan="5" className="courses-empty">
+                  <BookOpen size={32} />
+                  <h3>No courses found</h3>
+                  <p>Add your first course to get started.</p>
+                </td>
+              </tr>
+            ) : (
+              filteredCourses.map((course) => (
+                <tr key={course.id}>
+                  <td>
+                    <div className="course-name-cell">
+                      {course.banner ? (
+                        <img src={course.banner} alt={course.title} />
+                      ) : (
+                        <div className="course-placeholder">
+                          <BookOpen size={20} />
+                        </div>
+                      )}
+
+                      <div>
+                        <strong>{course.title}</strong>
+                        <span>{course.description}</span>
+                      </div>
+                    </div>
+                  </td>
+
+                  <td>{course.category}</td>
+                  <td>₹{course.price}</td>
+
+                  <td>
+                    <span
+                      className={`course-status ${(course.status || "draft").toLowerCase()}`}
+                    >
+                      {course.status}
+                    </span>
+                  </td>
+
+                  <td>
+                    <div className="course-actions">
+                      <button
+                        onClick={() => handleEdit(course)}
+                        aria-label="Edit course"
+                      >
+                        <Pencil size={17} />
+                      </button>
+
+                      <button
+                        onClick={() => handleDelete(course.id)}
+                        aria-label="Delete course"
+                      >
+                        <Trash2 size={17} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {showForm && (
+        <div className="course-modal-overlay">
+          <motion.div
+            className="course-modal"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <div className="course-modal-header">
+              <div>
+                <h2>{editingId ? "Edit Course" : "Add New Course"}</h2>
+                <p>Enter the course information below.</p>
+              </div>
+
+              <button onClick={resetForm} aria-label="Close">
+                <X size={21} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit}>
+              <label>Course Title</label>
+              <input
+                required
+                value={formData.title}
+                onChange={(e) =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
+                placeholder="e.g. Professional Video Editing"
+              />
+
+              <label>Description</label>
+              <textarea
+                required
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+                placeholder="Enter course description"
+              />
+
+              <label>Category</label>
+              <input
+                required
+                value={formData.category}
+                onChange={(e) =>
+                  setFormData({ ...formData, category: e.target.value })
+                }
+                placeholder="e.g. Video Editing"
+              />
+
+              <label>Course Price (₹)</label>
+              <input
+                type="number"
+                min="0"
+                required
+                value={formData.price}
+                onChange={(e) =>
+                  setFormData({ ...formData, price: e.target.value })
+                }
+                placeholder="Enter price"
+              />
+
+              <label>Banner Image URL</label>
+              <div className="course-image-input">
+                <ImagePlus size={18} />
+                <input
+                  type="url"
+                  value={formData.banner}
+                  onChange={(e) =>
+                    setFormData({ ...formData, banner: e.target.value })
+                  }
+                  placeholder="Paste image URL"
+                />
+              </div>
+
+              <label>Course Status</label>
+              <select
+                value={formData.status}
+                onChange={(e) =>
+                  setFormData({ ...formData, status: e.target.value })
+                }
+              >
+                <option value="Published">Published</option>
+                <option value="Draft">Draft</option>
+              </select>
+
+              <div className="course-form-actions">
+                <button
+                  type="button"
+                  className="cancel-course-btn"
+                  onClick={resetForm}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="save-course-btn"
+                  disabled={saving}
+                >
+                  {saving
+                    ? "Saving..."
+                    : editingId
+                    ? "Update Course"
+                    : "Save Course"}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default CoursesManager;

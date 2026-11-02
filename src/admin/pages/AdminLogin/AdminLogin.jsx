@@ -1,26 +1,40 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginAdmin } from "../../../firebase/auth";
+import { useAuth } from "../../../AuthContext";
 import "./AdminLogin.css";
 
 function AdminLogin() {
   const navigate = useNavigate();
+
+  const {
+    user,
+    isAdmin,
+    loading: authLoading,
+  } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    if (!authLoading && user && isAdmin) {
+      navigate("/admin/dashboard", { replace: true });
+    }
+  }, [user, isAdmin, authLoading, navigate]);
+
   const handleLogin = async (e) => {
     e.preventDefault();
+
     setError("");
     setLoading(true);
 
     try {
       await loginAdmin(email, password);
-      navigate("/admin/dashboard");
     } catch (err) {
+      console.error("Login failed:", err);
       setError("Invalid email or password. Please try again.");
     } finally {
       setLoading(false);
@@ -74,10 +88,12 @@ function AdminLogin() {
           <button
             type="submit"
             className="login-button"
-            disabled={loading}
+            disabled={loading || authLoading}
           >
-            {loading ? "Signing in..." : "Sign In"}
-            {!loading && <span>→</span>}
+            {loading || authLoading
+              ? "Signing in..."
+              : "Sign In"}
+            {!loading && !authLoading && <span>→</span>}
           </button>
         </form>
 

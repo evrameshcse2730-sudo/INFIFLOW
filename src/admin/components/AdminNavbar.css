@@ -1,0 +1,165 @@
+
+.admin-navbar {
+  width: 100%;
+  min-height: 82px;
+  padding: 0 35px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.85);
+  border-bottom: 1px solid #e9f0f7;
+  backdrop-filter: blur(20px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.navbar-left h2 {
+  margin: 0 0 5px;
+  color: #173b55;
+  font-size: 19px;
+  font-weight: 750;
+}
+
+.navbar-left p {
+  margin: 0;
+  color: #91a1af;
+  font-size: 12px;
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+
+.navbar-icon-button {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #e7eef5;
+  border-radius: 11px;
+  background: #fff;
+  color: #668398;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.navbar-icon-button:hover {
+  color: #008fce;
+  background: #effaff;
+  border-color: #bceaff;
+}
+
+.navbar-profile {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding-left: 20px;
+  border-left: 1px solid #e9f0f7;
+}
+
+.navbar-avatar {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #e8f7ff;
+  color: #008fce;
+}
+
+.navbar-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.navbar-user-info strong {
+  color: #25475f;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.navbar-user-info span {
+  max-width: 190px;
+  overflow: hidden;
+  color: #91a1af;
+  font-size: 11px;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 600px) {
+  .admin-navbar {
+    min-height: 72px;
+    padding: 0 16px;
+  }
+
+  .navbar-right {
+    gap: 12px;
+  }
+
+  .navbar-profile {
+    gap: 7px;
+    padding-left: 10px;
+  }
+
+  .navbar-user-info span {
+    max-width: 105px;
+  }
+}
+@media (max-width: 400px) {
+  .admin-navbar {
+    padding: 0 12px;
+  }
+
+  .navbar-left h2 {
+    font-size: 16px;
+  }
+
+  .navbar-left p {
+    font-size: 10px;
+  }
+
+  .navbar-right {
+    gap: 8px;
+  }
+
+  .navbar-user-info span {
+    display: none;
+  }
+
+  .navbar-profile {
+    padding-left: 8px;
+  }
+
+  .navbar-avatar {
+    width: 36px;
+    height: 36px;
+  }
+}
+.navbar-menu-button {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .navbar-menu-button {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border: 1px solid #e7eef5;
+    border-radius: 10px;
+    background: #fff;
+    color: #087fc2;
+    cursor: pointer;
+  }
+
+  .navbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+}
