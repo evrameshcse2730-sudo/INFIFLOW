@@ -1,23 +1,30 @@
-
 import { Routes, Route, Navigate } from "react-router-dom";
+
+import Home from "../pages/Home/Home";
 
 import AdminLogin from "../admin/pages/AdminLogin/AdminLogin";
 import Dashboard from "../admin/pages/Dashboard/Dashboard";
 import CoursesManager from "../admin/pages/CoursesManager/CoursesManager";
-
 import AdminLayout from "../admin/layout/AdminLayout";
 import ProtectedRoute from "./ProtectedRoute";
 import PDFManager from "../admin/pages/PDFManager/PDFManager";
 import ProjectsManager from "../admin/pages/ProjectsManager/ProjectsManager";
 import Settings from "../admin/pages/Settings/Settings";
+import CoursesPage from "../pages/Courses/CoursesPage";
+import CourseDetails from "../pages/Courses/CourseDetails";
 
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<div>INIFLOW Home Page</div>} />
+      {/* Public Routes */}
+      <Route path="/" element={<Home />} />
+      <Route path="/courses" element={<CoursesPage />} />
+      <Route path="/courses/:slug" element={<CourseDetails />} />
 
+      {/* Admin Login */}
       <Route path="/admin/login" element={<AdminLogin />} />
 
+      {/* Protected Admin Routes */}
       <Route element={<ProtectedRoute />}>
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Navigate to="dashboard" replace />} />
@@ -33,5 +40,4 @@ function AppRoutes() {
     </Routes>
   );
 }
-
 export default AppRoutes;

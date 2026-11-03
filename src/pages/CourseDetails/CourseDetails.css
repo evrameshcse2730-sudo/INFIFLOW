@@ -1,0 +1,69 @@
+
+import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
+import { coursesData } from "../../data/coursesData";
+import "./CoursePages.css";
+
+function CoursesPage() {
+  return (
+    <main className="course-page">
+      <section className="course-page-hero">
+        <span className="courses-eyebrow">INIFLOW LEARNING SPACE</span>
+        <h1>
+          Learn Something
+          <span> Extraordinary.</span>
+        </h1>
+        <p>
+          Discover creative courses, build new skills and
+          turn your ideas into reality.
+        </p>
+      </section>
+
+      <section className="course-catalog">
+        <div className="course-catalog-heading">
+          <div>
+            <span className="courses-eyebrow">EXPLORE & LEARN</span>
+            <h2>All Courses</h2>
+          </div>
+          <span>{coursesData.length} Courses Available</span>
+        </div>
+
+        <div className="course-catalog-grid">
+          {coursesData.map((course, index) => (
+            <motion.article
+              key={course.id}
+              className={`catalog-course-card ${course.gradient}`}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+              whileHover={{ y: -8 }}
+            >
+              <div className="catalog-course-art">
+                <span>{course.symbol}</span>
+              </div>
+
+              <div className="catalog-course-info">
+                <span className="course-preview-category">
+                  {course.category}
+                </span>
+                <h3>{course.title}</h3>
+                <p>{course.description}</p>
+
+                <div className="catalog-course-meta">
+                  <span>{course.level}</span>
+                  <span>{course.numberOfClasses} Classes</span>
+                </div>
+
+                <Link to={`/courses/${course.slug}`}>
+                  View Course <span>↗</span>
+                </Link>
+              </div>
+            </motion.article>
+          ))}
+        </div>
+      </section>
+    </main>
+  );
+}
+
+export default CoursesPage;

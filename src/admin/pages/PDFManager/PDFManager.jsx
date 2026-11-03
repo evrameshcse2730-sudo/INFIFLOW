@@ -11,12 +11,14 @@ import {
 } from "firebase/firestore";
 
 import { db } from "../../../firebase/firebase";
+import { uploadToCloudinary } from "../../../firebase/cloudinary";
 import "./PDFManager.css";
 
 function PDFManager() {
   const [pdfs, setPdfs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
 
   const initialForm = {
@@ -24,6 +26,7 @@ function PDFManager() {
     course: "",
     description: "",
     pdfUrl: "",
+    publicId: "",
     status: "Published",
   };
 
@@ -37,12 +40,12 @@ function PDFManager() {
 
       const snapshot = await getDocs(collection(db, "pdfs"));
 
-      const pdfList = snapshot.docs.map((item) => ({
-        id: item.id,
-        ...item.data(),
-      }));
-
-      setPdfs(pdfList);
+      setPdfs(
+        snapshot.docs.map((item) => ({
+          id: item.id,
+          ...item.data(),
+        }))
+      );
     } catch (err) {
       console.error("PDF fetch error:", err);
       setError("Unable to load PDFs. Please try again.");
@@ -56,17 +59,54 @@ function PDFManager() {
   }, []);
 
   const handleChange = (e) => {
-    setForm({
-      ...form,
+    setForm((previous) => ({
+      ...previous,
       [e.target.name]: e.target.value,
-    });
+    }));
+  };
+
+  const handleUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setError("");
+
+    if (file.type !== "application/pdf") {
+      setError("Please select a PDF file.");
+      e.target.value = "";
+      return;
+    }
+
+    if (file.size > 20 * 1024 * 1024) {
+      setError("PDF size must be less than 20 MB.");
+      e.target.value = "";
+      return;
+    }
+
+    try {
+      setUploading(true);
+
+      const result = await uploadToCloudinary(file, "pdf");
+
+      setForm((previous) => ({
+        ...previous,
+        pdfUrl: result.url,
+        publicId: result.publicId,
+      }));
+    } catch (err) {
+      console.error("PDF upload error:", err);
+      setError(err.message || "PDF upload failed.");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!form.title.trim() || !form.course.trim() || !form.pdfUrl.trim()) {
-      setError("Please fill in all required fields.");
+      setError("Please fill in all required fields and upload a PDF.");
       return;
     }
 
@@ -79,6 +119,7 @@ function PDFManager() {
         course: form.course.trim(),
         description: form.description.trim(),
         pdfUrl: form.pdfUrl.trim(),
+        publicId: form.publicId || "",
         status: form.status,
         updatedAt: serverTimestamp(),
       };
@@ -109,6 +150,7 @@ function PDFManager() {
       course: pdf.course || "",
       description: pdf.description || "",
       pdfUrl: pdf.pdfUrl || "",
+      publicId: pdf.publicId || "",
       status: pdf.status || "Published",
     });
 
@@ -117,16 +159,16 @@ function PDFManager() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (pdf) => {
     const confirmDelete = window.confirm(
-      "Are you sure you want to delete this PDF?"
+      "Delete this PDF record? The Cloudinary file will remain in storage."
     );
 
     if (!confirmDelete) return;
 
     try {
-      await deleteDoc(doc(db, "pdfs", id));
-      setPdfs((previous) => previous.filter((pdf) => pdf.id !== id));
+      await deleteDoc(doc(db, "pdfs", pdf.id));
+      setPdfs((previous) => previous.filter((item) => item.id !== pdf.id));
     } catch (err) {
       console.error("PDF delete error:", err);
       setError("Unable to delete PDF.");
@@ -200,16 +242,24 @@ function PDFManager() {
             </div>
 
             <div className="pdf-field pdf-full">
-              <label>PDF URL *</label>
+              <label>Upload PDF *</label>
               <input
-                type="url"
-                name="pdfUrl"
-                value={form.pdfUrl}
-                onChange={handleChange}
-                placeholder="Paste PDF link here"
-                required
+                type="file"
+                accept=".pdf,application/pdf"
+                onChange={handleUpload}
+                disabled={uploading || saving}
               />
-              <small>Direct PDF upload will be added later using Cloudinary.</small>
+
+              {uploading && <small>Uploading PDF to Cloudinary...</small>}
+
+              {form.pdfUrl && !uploading && (
+                <small>
+                  PDF uploaded successfully.{" "}
+                  <a href={form.pdfUrl} target="_blank" rel="noreferrer">
+                    Preview PDF
+                  </a>
+                </small>
+              )}
             </div>
 
             <div className="pdf-field">
@@ -239,9 +289,11 @@ function PDFManager() {
             <button
               type="submit"
               className="pdf-submit-btn"
-              disabled={saving}
+              disabled={saving || uploading}
             >
-              {saving
+              {uploading
+                ? "Uploading..."
+                : saving
                 ? "Saving..."
                 : editingId
                 ? "Update PDF"
@@ -258,7 +310,11 @@ function PDFManager() {
             <p>Manage your existing PDF resources.</p>
           </div>
 
-          <button className="pdf-refresh-btn" onClick={fetchPDFs}>
+          <button
+            type="button"
+            className="pdf-refresh-btn"
+            onClick={fetchPDFs}
+          >
             Refresh
           </button>
         </div>
@@ -299,6 +355,7 @@ function PDFManager() {
                   </a>
 
                   <button
+                    type="button"
                     className="pdf-edit-btn"
                     onClick={() => handleEdit(pdf)}
                   >
@@ -306,8 +363,9 @@ function PDFManager() {
                   </button>
 
                   <button
+                    type="button"
                     className="pdf-delete-btn"
-                    onClick={() => handleDelete(pdf.id)}
+                    onClick={() => handleDelete(pdf)}
                   >
                     Delete
                   </button>

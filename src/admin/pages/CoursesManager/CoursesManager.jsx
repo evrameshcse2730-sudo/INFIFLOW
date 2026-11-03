@@ -22,6 +22,7 @@ import {
 } from "firebase/firestore";
 
 import { db } from "../../../firebase/firebase";
+import { uploadToCloudinary } from "../../../firebase/cloudinary";
 import "./CoursesManager.css";
 
 const initialForm = {
@@ -30,6 +31,7 @@ const initialForm = {
   category: "",
   price: "",
   banner: "",
+  bannerPublicId: "",
   status: "Published",
 };
 
@@ -42,85 +44,147 @@ function CoursesManager() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+
+  const [selectedBanner, setSelectedBanner] = useState(null);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   // Fetch courses from Firestore
+  const fetchCourses = async () => {
+    try {
+      setLoading(true);
+
+      const snapshot = await getDocs(collection(db, "courses"));
+
+      const courseList = snapshot.docs.map((item) => ({
+        id: item.id,
+        ...item.data(),
+      }));
+
+      setCourses(courseList);
+    } catch (err) {
+      console.error("Courses fetch error:", err);
+      setError("Unable to load courses. Please check Firestore permissions.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        setLoading(true);
-
-        const snapshot = await getDocs(collection(db, "courses"));
-
-        const courseList = snapshot.docs.map((item) => ({
-          id: item.id,
-          ...item.data(),
-        }));
-
-        setCourses(courseList);
-      } catch (err) {
-        console.error("Courses fetch error:", err);
-        setError("Unable to load courses. Please check Firestore permissions.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchCourses();
   }, []);
 
+  // Reset form
   const resetForm = () => {
     setFormData(initialForm);
+    setSelectedBanner(null);
     setEditingId(null);
     setShowForm(false);
     setError("");
+    setSuccess("");
+  };
+
+  // Select banner image
+  const handleBannerSelect = (e) => {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setError("Please select a valid image.");
+      e.target.value = "";
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setError("Image size should be below 10 MB.");
+      e.target.value = "";
+      return;
+    }
+
+    setSelectedBanner(file);
+    setError("");
+    setSuccess("");
   };
 
   // Add or update course
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSaving(true);
-    setError("");
+
+    if (!formData.title.trim() || !formData.category.trim()) {
+      setError("Please enter course title and category.");
+      return;
+    }
+
+    if (!editingId && !selectedBanner) {
+      setError("Please select a course banner image.");
+      return;
+    }
 
     try {
+      setSaving(true);
+      setError("");
+      setSuccess("");
+
+      let bannerUrl = formData.banner;
+      let bannerPublicId = formData.bannerPublicId;
+
+      // Automatically upload selected image to Cloudinary
+      if (selectedBanner) {
+        setUploadingBanner(true);
+
+        const result = await uploadToCloudinary(
+          selectedBanner,
+          "image"
+        );
+
+        bannerUrl = result.url;
+        bannerPublicId = result.publicId;
+
+        setUploadingBanner(false);
+      }
+
+      // Prepare course data
       const courseData = {
         title: formData.title.trim(),
         description: formData.description.trim(),
         category: formData.category.trim(),
         price: Number(formData.price),
-        banner: formData.banner.trim(),
+        banner: bannerUrl,
+        bannerPublicId: bannerPublicId || "",
         status: formData.status,
         updatedAt: serverTimestamp(),
       };
 
+      // Update existing course
       if (editingId) {
-        await updateDoc(doc(db, "courses", editingId), courseData);
-
-        setCourses((prev) =>
-          prev.map((course) =>
-            course.id === editingId
-              ? { ...course, ...courseData }
-              : course
-          )
+        await updateDoc(
+          doc(db, "courses", editingId),
+          courseData
         );
       } else {
-        const docRef = await addDoc(collection(db, "courses"), {
+        // Add new course
+        await addDoc(collection(db, "courses"), {
           ...courseData,
           createdAt: serverTimestamp(),
         });
-
-        setCourses((prev) => [
-          ...prev,
-          { ...courseData, id: docRef.id },
-        ]);
       }
 
-      resetForm();
+      await fetchCourses();
+
+      setSuccess("Course saved successfully!");
+      setFormData(initialForm);
+      setSelectedBanner(null);
+      setEditingId(null);
+      setShowForm(false);
+
     } catch (err) {
       console.error("Course save error:", err);
-      setError("Course could not be saved. Please try again.");
+      setError(err.message || "Course could not be saved. Please try again.");
     } finally {
       setSaving(false);
+      setUploadingBanner(false);
     }
   };
 
@@ -132,12 +196,15 @@ function CoursesManager() {
       category: course.category || "",
       price: course.price ?? "",
       banner: course.banner || "",
+      bannerPublicId: course.bannerPublicId || "",
       status: course.status || "Published",
     });
 
+    setSelectedBanner(null);
     setEditingId(course.id);
     setShowForm(true);
     setError("");
+    setSuccess("");
   };
 
   // Delete course
@@ -160,6 +227,7 @@ function CoursesManager() {
     }
   };
 
+  // Search courses
   const filteredCourses = courses.filter((course) =>
     (course.title || "")
       .toLowerCase()
@@ -198,6 +266,7 @@ function CoursesManager() {
       </div>
 
       {error && <p className="login-error">{error}</p>}
+      {success && <p className="course-success">{success}</p>}
 
       <div className="courses-toolbar">
         <div className="courses-search">
@@ -244,7 +313,10 @@ function CoursesManager() {
                   <td>
                     <div className="course-name-cell">
                       {course.banner ? (
-                        <img src={course.banner} alt={course.title} />
+                        <img
+                          src={course.banner}
+                          alt={course.title}
+                        />
                       ) : (
                         <div className="course-placeholder">
                           <BookOpen size={20} />
@@ -317,7 +389,10 @@ function CoursesManager() {
                 required
                 value={formData.title}
                 onChange={(e) =>
-                  setFormData({ ...formData, title: e.target.value })
+                  setFormData({
+                    ...formData,
+                    title: e.target.value,
+                  })
                 }
                 placeholder="e.g. Professional Video Editing"
               />
@@ -327,7 +402,10 @@ function CoursesManager() {
                 required
                 value={formData.description}
                 onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
+                  setFormData({
+                    ...formData,
+                    description: e.target.value,
+                  })
                 }
                 placeholder="Enter course description"
               />
@@ -337,7 +415,10 @@ function CoursesManager() {
                 required
                 value={formData.category}
                 onChange={(e) =>
-                  setFormData({ ...formData, category: e.target.value })
+                  setFormData({
+                    ...formData,
+                    category: e.target.value,
+                  })
                 }
                 placeholder="e.g. Video Editing"
               />
@@ -349,29 +430,54 @@ function CoursesManager() {
                 required
                 value={formData.price}
                 onChange={(e) =>
-                  setFormData({ ...formData, price: e.target.value })
+                  setFormData({
+                    ...formData,
+                    price: e.target.value,
+                  })
                 }
                 placeholder="Enter price"
               />
 
-              <label>Banner Image URL</label>
+              <label>Banner Image</label>
+
               <div className="course-image-input">
                 <ImagePlus size={18} />
                 <input
-                  type="url"
-                  value={formData.banner}
-                  onChange={(e) =>
-                    setFormData({ ...formData, banner: e.target.value })
-                  }
-                  placeholder="Paste image URL"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleBannerSelect}
                 />
               </div>
+
+              {selectedBanner && (
+                <p className="course-upload-info">
+                  Selected: {selectedBanner.name}
+                </p>
+              )}
+
+              {formData.banner && !selectedBanner && (
+                <div className="course-banner-preview">
+                  <img
+                    src={formData.banner}
+                    alt="Current course banner"
+                  />
+                </div>
+              )}
+
+              {selectedBanner && (
+                <div className="course-banner-preview">
+                  <p>New banner selected. It will upload when you save.</p>
+                </div>
+              )}
 
               <label>Course Status</label>
               <select
                 value={formData.status}
                 onChange={(e) =>
-                  setFormData({ ...formData, status: e.target.value })
+                  setFormData({
+                    ...formData,
+                    status: e.target.value,
+                  })
                 }
               >
                 <option value="Published">Published</option>
@@ -383,6 +489,7 @@ function CoursesManager() {
                   type="button"
                   className="cancel-course-btn"
                   onClick={resetForm}
+                  disabled={saving}
                 >
                   Cancel
                 </button>
@@ -392,8 +499,10 @@ function CoursesManager() {
                   className="save-course-btn"
                   disabled={saving}
                 >
-                  {saving
-                    ? "Saving..."
+                  {uploadingBanner
+                    ? "Uploading Image..."
+                    : saving
+                    ? "Saving Course..."
                     : editingId
                     ? "Update Course"
                     : "Save Course"}

@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore";
 
 import { db } from "../../../firebase/firebase";
+import { uploadToCloudinary } from "../../../firebase/cloudinary";
 import "./ProjectsManager.css";
 
 const initialForm = {
@@ -18,6 +19,7 @@ const initialForm = {
   description: "",
   category: "",
   imageUrl: "",
+  imagePublicId: "",
   projectUrl: "",
   status: "Published",
 };
@@ -25,10 +27,16 @@ const initialForm = {
 function ProjectsManager() {
   const [projects, setProjects] = useState([]);
   const [form, setForm] = useState(initialForm);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imageInputKey, setImageInputKey] = useState(0);
   const [editingId, setEditingId] = useState(null);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const fetchProjects = async () => {
     try {
@@ -45,7 +53,7 @@ function ProjectsManager() {
       );
     } catch (err) {
       console.error("Projects fetch error:", err);
-      setError("Unable to load projects.");
+      setError(err.message || "Unable to load projects.");
     } finally {
       setLoading(false);
     }
@@ -56,10 +64,39 @@ function ProjectsManager() {
   }, []);
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
+
     setForm((previous) => ({
       ...previous,
-      [e.target.name]: e.target.value,
+      [name]: value,
     }));
+  };
+
+  const handleImageSelect = (e) => {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setError("Please select a valid image.");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setError("Image size should be below 10 MB.");
+      return;
+    }
+
+    setSelectedImage(file);
+    setError("");
+    setSuccess("");
+  };
+
+  const resetForm = () => {
+    setForm(initialForm);
+    setSelectedImage(null);
+    setEditingId(null);
+    setImageInputKey((previous) => previous + 1);
   };
 
   const handleSubmit = async (e) => {
@@ -70,22 +107,50 @@ function ProjectsManager() {
       return;
     }
 
+    if (!form.imageUrl && !selectedImage) {
+      setError("Please select a project thumbnail image.");
+      return;
+    }
+
     try {
       setSaving(true);
       setError("");
+      setSuccess("");
+
+      let imageUrl = form.imageUrl;
+      let imagePublicId = form.imagePublicId;
+
+      // Automatically upload selected image before saving.
+      if (selectedImage) {
+        setUploadingImage(true);
+
+        const result = await uploadToCloudinary(
+          selectedImage,
+          "image"
+        );
+
+        imageUrl = result.url;
+        imagePublicId = result.publicId;
+
+        setUploadingImage(false);
+      }
 
       const projectData = {
         title: form.title.trim(),
         description: form.description.trim(),
         category: form.category.trim(),
-        imageUrl: form.imageUrl.trim(),
+        imageUrl,
+        imagePublicId,
         projectUrl: form.projectUrl.trim(),
         status: form.status,
         updatedAt: serverTimestamp(),
       };
 
       if (editingId) {
-        await updateDoc(doc(db, "projects", editingId), projectData);
+        await updateDoc(
+          doc(db, "projects", editingId),
+          projectData
+        );
       } else {
         await addDoc(collection(db, "projects"), {
           ...projectData,
@@ -93,14 +158,21 @@ function ProjectsManager() {
         });
       }
 
-      setForm(initialForm);
-      setEditingId(null);
+      resetForm();
+
+      setSuccess(
+        editingId
+          ? "Project updated successfully!"
+          : "Project added successfully!"
+      );
+
       await fetchProjects();
     } catch (err) {
       console.error("Project save error:", err);
-      setError("Unable to save project. Check Firebase permissions.");
+      setError(err.message || "Unable to save project.");
     } finally {
       setSaving(false);
+      setUploadingImage(false);
     }
   };
 
@@ -110,42 +182,64 @@ function ProjectsManager() {
       description: project.description || "",
       category: project.category || "",
       imageUrl: project.imageUrl || "",
+      imagePublicId: project.imagePublicId || "",
       projectUrl: project.projectUrl || "",
       status: project.status || "Published",
     });
 
+    setSelectedImage(null);
+    setImageInputKey((previous) => previous + 1);
     setEditingId(project.id);
     setError("");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setSuccess("");
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this project?")) {
-      return;
-    }
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this project?"
+    );
+
+    if (!confirmed) return;
 
     try {
+      setError("");
+      setSuccess("");
+
       await deleteDoc(doc(db, "projects", id));
+
       setProjects((previous) =>
         previous.filter((project) => project.id !== id)
       );
+
+      if (editingId === id) {
+        resetForm();
+      }
+
+      setSuccess("Project deleted successfully!");
     } catch (err) {
       console.error("Project delete error:", err);
-      setError("Unable to delete project.");
+      setError(err.message || "Unable to delete project.");
     }
   };
 
   const handleCancel = () => {
-    setForm(initialForm);
-    setEditingId(null);
+    resetForm();
     setError("");
+    setSuccess("");
   };
 
   return (
     <div className="projects-manager">
       <div className="projects-header">
         <div>
-          <span className="projects-eyebrow">PORTFOLIO MANAGEMENT</span>
+          <span className="projects-eyebrow">
+            PORTFOLIO MANAGEMENT
+          </span>
           <h1>Projects</h1>
           <p>Manage and showcase creative projects.</p>
         </div>
@@ -156,10 +250,17 @@ function ProjectsManager() {
         </div>
       </div>
 
-      {error && <div className="projects-error">{error}</div>}
+      {error && (
+        <div className="projects-error">{error}</div>
+      )}
+
+      {success && (
+        <div className="projects-success">{success}</div>
+      )}
 
       <div className="projects-form-card">
         <h2>{editingId ? "Edit Project" : "Add New Project"}</h2>
+
         <p className="projects-subtitle">
           Add project information to your portfolio.
         </p>
@@ -200,15 +301,44 @@ function ProjectsManager() {
             </div>
 
             <div className="projects-field projects-full">
-              <label>Thumbnail Image URL</label>
+              <label>Thumbnail Image *</label>
+
               <input
-                type="url"
-                name="imageUrl"
-                value={form.imageUrl}
-                onChange={handleChange}
-                placeholder="Paste image URL"
+                key={imageInputKey}
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
               />
-              <small>Direct image upload will be added later.</small>
+
+              {selectedImage && (
+                <p>Selected: {selectedImage.name}</p>
+              )}
+
+              {form.imageUrl && (
+                <div style={{ marginTop: "15px" }}>
+                  <img
+                    src={form.imageUrl}
+                    alt="Project preview"
+                    style={{
+                      width: "180px",
+                      height: "110px",
+                      objectFit: "cover",
+                      borderRadius: "10px",
+                    }}
+                  />
+
+                  <p>
+                    {selectedImage
+                      ? "New image selected. It will replace the existing image when saved."
+                      : "Current project image"}
+                  </p>
+                </div>
+              )}
+
+              <p className="projects-subtitle">
+                Image uploads automatically when you save the project.
+                Maximum size: 10 MB.
+              </p>
             </div>
 
             <div className="projects-field projects-full">
@@ -241,6 +371,7 @@ function ProjectsManager() {
                 type="button"
                 className="projects-cancel-btn"
                 onClick={handleCancel}
+                disabled={saving}
               >
                 Cancel
               </button>
@@ -249,10 +380,12 @@ function ProjectsManager() {
             <button
               type="submit"
               className="projects-submit-btn"
-              disabled={saving}
+              disabled={saving || uploadingImage}
             >
-              {saving
-                ? "Saving..."
+              {uploadingImage
+                ? "Uploading Image..."
+                : saving
+                ? "Saving Project..."
                 : editingId
                 ? "Update Project"
                 : "Add Project"}
@@ -268,13 +401,20 @@ function ProjectsManager() {
             <p>Your portfolio projects.</p>
           </div>
 
-          <button onClick={fetchProjects} className="projects-refresh-btn">
-            Refresh
+          <button
+            type="button"
+            onClick={fetchProjects}
+            className="projects-refresh-btn"
+            disabled={loading}
+          >
+            {loading ? "Loading..." : "Refresh"}
           </button>
         </div>
 
         {loading ? (
-          <div className="projects-empty">Loading projects...</div>
+          <div className="projects-empty">
+            Loading projects...
+          </div>
         ) : projects.length === 0 ? (
           <div className="projects-empty">
             <h3>No projects yet</h3>
@@ -299,12 +439,15 @@ function ProjectsManager() {
                 <div className="project-info">
                   <h3>{project.title}</h3>
                   <p>{project.category}</p>
+
                   <span
                     className={`project-status ${
-                      project.status === "Published" ? "published" : "draft"
+                      project.status === "Published"
+                        ? "published"
+                        : "draft"
                     }`}
                   >
-                    {project.status}
+                    {project.status || "Draft"}
                   </span>
                 </div>
 
@@ -321,6 +464,7 @@ function ProjectsManager() {
                   )}
 
                   <button
+                    type="button"
                     className="project-edit-btn"
                     onClick={() => handleEdit(project)}
                   >
@@ -328,6 +472,7 @@ function ProjectsManager() {
                   </button>
 
                   <button
+                    type="button"
                     className="project-delete-btn"
                     onClick={() => handleDelete(project.id)}
                   >
