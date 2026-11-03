@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   collection,
   addDoc,
@@ -14,54 +14,116 @@ import { db } from "../../../firebase/firebase";
 import { uploadToCloudinary } from "../../../firebase/cloudinary";
 import "./PDFManager.css";
 
+const initialForm = {
+  title: "",
+  courseId: "",
+  courseTitle: "",
+  classId: "",
+  classTitle: "",
+  description: "",
+  pdfUrl: "",
+  publicId: "",
+  status: "Published",
+};
+
 function PDFManager() {
   const [pdfs, setPdfs] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [classes, setClasses] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
 
-  const initialForm = {
-    title: "",
-    course: "",
-    description: "",
-    pdfUrl: "",
-    publicId: "",
-    status: "Published",
-  };
-
   const [form, setForm] = useState(initialForm);
   const [editingId, setEditingId] = useState(null);
 
-  const fetchPDFs = async () => {
+  const selectedClasses = useMemo(() => {
+    return classes
+      .filter((item) => item.courseId === form.courseId)
+      .sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
+  }, [classes, form.courseId]);
+
+  const fetchData = async () => {
     try {
       setLoading(true);
       setError("");
 
-      const snapshot = await getDocs(collection(db, "pdfs"));
+      const [pdfSnapshot, courseSnapshot, classSnapshot] =
+        await Promise.all([
+          getDocs(collection(db, "pdfs")),
+          getDocs(collection(db, "courses")),
+          getDocs(collection(db, "classes")),
+        ]);
 
       setPdfs(
-        snapshot.docs.map((item) => ({
+        pdfSnapshot.docs.map((item) => ({
+          id: item.id,
+          ...item.data(),
+        }))
+      );
+
+      setCourses(
+        courseSnapshot.docs
+          .map((item) => ({
+            id: item.id,
+            ...item.data(),
+          }))
+          .filter((item) => item.status === "Published")
+          .sort((a, b) => a.title.localeCompare(b.title))
+      );
+
+      setClasses(
+        classSnapshot.docs.map((item) => ({
           id: item.id,
           ...item.data(),
         }))
       );
     } catch (err) {
-      console.error("PDF fetch error:", err);
-      setError("Unable to load PDFs. Please try again.");
+      console.error("PDF data fetch error:", err);
+      setError("Unable to load PDF data. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchPDFs();
+    fetchData();
   }, []);
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    if (name === "courseId") {
+      const selectedCourse = courses.find((item) => item.id === value);
+
+      setForm((previous) => ({
+        ...previous,
+        courseId: value,
+        courseTitle: selectedCourse?.title || "",
+        classId: "",
+        classTitle: "",
+      }));
+
+      return;
+    }
+
+    if (name === "classId") {
+      const selectedClass = classes.find((item) => item.id === value);
+
+      setForm((previous) => ({
+        ...previous,
+        classId: value,
+        classTitle: selectedClass?.title || "",
+      }));
+
+      return;
+    }
+
     setForm((previous) => ({
       ...previous,
-      [e.target.name]: e.target.value,
+      [name]: value,
     }));
   };
 
@@ -105,8 +167,13 @@ function PDFManager() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!form.title.trim() || !form.course.trim() || !form.pdfUrl.trim()) {
-      setError("Please fill in all required fields and upload a PDF.");
+    if (
+      !form.title.trim() ||
+      !form.courseId ||
+      !form.classId ||
+      !form.pdfUrl.trim()
+    ) {
+      setError("Please enter the title, select a course and class, and upload a PDF.");
       return;
     }
 
@@ -116,7 +183,15 @@ function PDFManager() {
 
       const pdfData = {
         title: form.title.trim(),
-        course: form.course.trim(),
+
+        // Keep the old course field for compatibility.
+        course: form.courseTitle,
+        courseId: form.courseId,
+        courseTitle: form.courseTitle,
+
+        classId: form.classId,
+        classTitle: form.classTitle,
+
         description: form.description.trim(),
         pdfUrl: form.pdfUrl.trim(),
         publicId: form.publicId || "",
@@ -135,7 +210,7 @@ function PDFManager() {
 
       setForm(initialForm);
       setEditingId(null);
-      await fetchPDFs();
+      await fetchData();
     } catch (err) {
       console.error("PDF save error:", err);
       setError("Unable to save PDF. Please check Firebase permissions.");
@@ -145,9 +220,19 @@ function PDFManager() {
   };
 
   const handleEdit = (pdf) => {
+    const matchedCourse = courses.find(
+      (item) =>
+        item.id === pdf.courseId ||
+        item.title === pdf.courseTitle ||
+        item.title === pdf.course
+    );
+
     setForm({
       title: pdf.title || "",
-      course: pdf.course || "",
+      courseId: pdf.courseId || matchedCourse?.id || "",
+      courseTitle: pdf.courseTitle || pdf.course || matchedCourse?.title || "",
+      classId: pdf.classId || "",
+      classTitle: pdf.classTitle || "",
       description: pdf.description || "",
       pdfUrl: pdf.pdfUrl || "",
       publicId: pdf.publicId || "",
@@ -156,6 +241,7 @@ function PDFManager() {
 
     setEditingId(pdf.id);
     setError("");
+
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -168,7 +254,10 @@ function PDFManager() {
 
     try {
       await deleteDoc(doc(db, "pdfs", pdf.id));
-      setPdfs((previous) => previous.filter((item) => item.id !== pdf.id));
+
+      setPdfs((previous) =>
+        previous.filter((item) => item.id !== pdf.id)
+      );
     } catch (err) {
       console.error("PDF delete error:", err);
       setError("Unable to delete PDF.");
@@ -202,7 +291,7 @@ function PDFManager() {
         <div className="pdf-section-heading">
           <div>
             <h2>{editingId ? "Edit PDF" : "Add New PDF"}</h2>
-            <p>Enter the PDF details below.</p>
+            <p>Assign each PDF to a specific course and class.</p>
           </div>
         </div>
 
@@ -220,14 +309,44 @@ function PDFManager() {
             </div>
 
             <div className="pdf-field">
-              <label>Course Name *</label>
-              <input
-                name="course"
-                value={form.course}
+              <label>Course *</label>
+              <select
+                name="courseId"
+                value={form.courseId}
                 onChange={handleChange}
-                placeholder="Enter course name"
                 required
-              />
+              >
+                <option value="">Select Course</option>
+
+                {courses.map((course) => (
+                  <option key={course.id} value={course.id}>
+                    {course.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="pdf-field">
+              <label>Class *</label>
+              <select
+                name="classId"
+                value={form.classId}
+                onChange={handleChange}
+                disabled={!form.courseId || selectedClasses.length === 0}
+                required
+              >
+                <option value="">Select Class</option>
+
+                {selectedClasses.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.title}
+                  </option>
+                ))}
+              </select>
+
+              {form.courseId && selectedClasses.length === 0 && (
+                <small>No classes available for this course. Add a class first.</small>
+              )}
             </div>
 
             <div className="pdf-field pdf-full">
@@ -250,12 +369,18 @@ function PDFManager() {
                 disabled={uploading || saving}
               />
 
-              {uploading && <small>Uploading PDF to Cloudinary...</small>}
+              {uploading && (
+                <small>Uploading PDF to Cloudinary...</small>
+              )}
 
               {form.pdfUrl && !uploading && (
                 <small>
                   PDF uploaded successfully.{" "}
-                  <a href={form.pdfUrl} target="_blank" rel="noreferrer">
+                  <a
+                    href={form.pdfUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
                     Preview PDF
                   </a>
                 </small>
@@ -313,7 +438,7 @@ function PDFManager() {
           <button
             type="button"
             className="pdf-refresh-btn"
-            onClick={fetchPDFs}
+            onClick={fetchData}
           >
             Refresh
           </button>
@@ -334,7 +459,13 @@ function PDFManager() {
 
                 <div className="pdf-item-info">
                   <h3>{pdf.title}</h3>
-                  <p>{pdf.course}</p>
+
+                  <p>
+                    {pdf.courseTitle || pdf.course || "Course not assigned"}
+                    {" / "}
+                    {pdf.classTitle || "Class not assigned"}
+                  </p>
+
                   <span
                     className={`pdf-status ${
                       pdf.status === "Published" ? "published" : "draft"
@@ -342,6 +473,12 @@ function PDFManager() {
                   >
                     {pdf.status}
                   </span>
+
+                  {!pdf.classId && (
+                    <small>
+                      Legacy PDF — edit and assign it to a class.
+                    </small>
+                  )}
                 </div>
 
                 <div className="pdf-item-actions">

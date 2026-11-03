@@ -1,3 +1,4 @@
+
 import { Routes, Route, Navigate } from "react-router-dom";
 
 import Home from "../pages/Home/Home";
@@ -5,11 +6,14 @@ import Home from "../pages/Home/Home";
 import AdminLogin from "../admin/pages/AdminLogin/AdminLogin";
 import Dashboard from "../admin/pages/Dashboard/Dashboard";
 import CoursesManager from "../admin/pages/CoursesManager/CoursesManager";
-import AdminLayout from "../admin/layout/AdminLayout";
-import ProtectedRoute from "./ProtectedRoute";
+import ClassesManager from "../admin/pages/ClassesManager/ClassesManager";
 import PDFManager from "../admin/pages/PDFManager/PDFManager";
 import ProjectsManager from "../admin/pages/ProjectsManager/ProjectsManager";
 import Settings from "../admin/pages/Settings/Settings";
+
+import AdminLayout from "../admin/layout/AdminLayout";
+import ProtectedRoute from "./ProtectedRoute";
+
 import CoursesPage from "../pages/Courses/CoursesPage";
 import CourseDetails from "../pages/Courses/CourseDetails";
 
@@ -30,6 +34,7 @@ function AppRoutes() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="courses" element={<CoursesManager />} />
+          <Route path="classes" element={<ClassesManager />} />
           <Route path="pdfs" element={<PDFManager />} />
           <Route path="projects" element={<ProjectsManager />} />
           <Route path="settings" element={<Settings />} />
@@ -40,4 +45,5 @@ function AppRoutes() {
     </Routes>
   );
 }
+
 export default AppRoutes;

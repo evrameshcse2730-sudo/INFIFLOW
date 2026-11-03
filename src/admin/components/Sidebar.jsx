@@ -4,6 +4,7 @@ import { logoutAdmin } from "../../firebase/auth";
 import {
   LayoutDashboard,
   BookOpen,
+  GraduationCap,
   FileText,
   FolderKanban,
   Settings,
@@ -15,6 +16,7 @@ import "./Sidebar.css";
 const menuItems = [
   { title: "Dashboard", icon: LayoutDashboard, path: "/admin/dashboard" },
   { title: "Courses", icon: BookOpen, path: "/admin/courses" },
+  { title: "Classes", icon: GraduationCap, path: "/admin/classes" },
   { title: "PDF Library", icon: FileText, path: "/admin/pdfs" },
   { title: "Projects", icon: FolderKanban, path: "/admin/projects" },
   { title: "Settings", icon: Settings, path: "/admin/settings" },

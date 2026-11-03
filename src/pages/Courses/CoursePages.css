@@ -439,3 +439,117 @@
     flex-wrap: wrap;
   }
 }
+
+/* Classes Selection */
+
+.course-classes-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 25px;
+}
+
+.course-class-card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 22px;
+  border: 1px solid #e5edf6;
+  border-radius: 16px;
+  background: #ffffff;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.course-class-card:hover {
+  transform: translateY(-4px);
+  border-color: #8acdf0;
+  box-shadow: 0 12px 30px rgba(40, 130, 190, 0.09);
+}
+
+.course-class-card.selected {
+  border-color: #269edb;
+  background: linear-gradient(120deg, #effaff, #f5f5ff);
+  box-shadow: 0 8px 25px rgba(40, 130, 190, 0.08);
+}
+
+.course-class-icon {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: #e8f6ff;
+  color: #168fd5;
+  font-size: 20px;
+}
+
+.course-class-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.course-class-info h3 {
+  margin: 0 0 7px;
+  color: #253750;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.course-class-info p {
+  margin: 0;
+  color: #8996a8;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.course-class-arrow {
+  color: #168fd5;
+  font-size: 20px;
+  transition: transform 0.3s ease;
+}
+
+.course-class-card:hover .course-class-arrow {
+  transform: translateX(5px);
+}
+
+/* Selected Class Resources */
+
+.course-selected-resources {
+  margin-top: 35px;
+  padding: 30px;
+  border: 1px solid #e5edf6;
+  border-radius: 20px;
+  background: #fbfdff;
+}
+
+.course-selected-resources h3 {
+  margin: 0 0 10px;
+  color: #1b2d44;
+  font-size: 23px;
+  font-weight: 800;
+}
+
+.course-selected-resources > p {
+  color: #8490a2;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+@media (max-width: 600px) {
+  .course-classes-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .course-class-card {
+    padding: 17px;
+  }
+
+  .course-selected-resources {
+    padding: 20px;
+  }
+}
