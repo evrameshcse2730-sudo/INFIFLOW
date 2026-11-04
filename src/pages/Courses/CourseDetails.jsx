@@ -1,7 +1,6 @@
-
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   collection,
   getDocs,
@@ -9,14 +8,21 @@ import {
   where,
 } from "firebase/firestore";
 import {
+  AlertCircle,
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
   BookOpen,
-  FileText,
+  Check,
   Download,
   ExternalLink,
+  FileText,
 } from "lucide-react";
 
 import { db } from "../../firebase/firebase";
 import "./CoursePages.css";
+
+const EASE = [0.22, 1, 0.36, 1];
 
 function createSlug(title = "") {
   return title
@@ -25,6 +31,9 @@ function createSlug(title = "") {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 }
+
+const hasPrice = (price) =>
+  price !== undefined && price !== null && String(price).trim() !== "";
 
 function CourseDetails() {
   const { slug } = useParams();
@@ -36,6 +45,10 @@ function CourseDetails() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const reduceMotion = useReducedMotion();
+  const classesRef = useRef(null);
+  const resourcesRef = useRef(null);
 
   useEffect(() => {
     const fetchCourseDetails = async () => {
@@ -130,11 +143,53 @@ function CourseDetails() {
     );
   }, [pdfs, selectedClassId]);
 
+  const pdfCountByClass = useMemo(() => {
+    const counts = {};
+    pdfs.forEach((pdf) => {
+      counts[pdf.classId] = (counts[pdf.classId] || 0) + 1;
+    });
+    return counts;
+  }, [pdfs]);
+
+  const selectedClass = useMemo(
+    () => classes.find((item) => item.id === selectedClassId),
+    [classes, selectedClassId]
+  );
+
+  useEffect(() => {
+    if (!selectedClassId || !resourcesRef.current) return;
+    resourcesRef.current.scrollIntoView({
+      behavior: reduceMotion ? "auto" : "smooth",
+      block: "nearest",
+    });
+  }, [selectedClassId, reduceMotion]);
+
+  const scrollToClasses = () => {
+    classesRef.current?.scrollIntoView({
+      behavior: reduceMotion ? "auto" : "smooth",
+      block: "start",
+    });
+  };
+
+  const riseIn = (delay = 0) =>
+    reduceMotion
+      ? { initial: { opacity: 0 }, animate: { opacity: 1, transition: { duration: 0.4, delay } } }
+      : {
+          initial: { opacity: 0, y: 24 },
+          animate: { opacity: 1, y: 0, transition: { duration: 0.7, ease: EASE, delay } },
+        };
+
   if (loading) {
     return (
       <main className="course-detail-page">
-        <div className="course-detail-container">
-          <p>Loading course...</p>
+        <div className="course-detail-container" role="status">
+          <span className="course-sr-only">Loading course...</span>
+          <div className="course-detail-skeleton" aria-hidden="true">
+            <span className="course-skeleton-line is-label" />
+            <span className="course-skeleton-line is-title" />
+            <span className="course-skeleton-line" />
+            <span className="course-skeleton-line is-short" />
+          </div>
         </div>
       </main>
     );
@@ -144,8 +199,15 @@ function CourseDetails() {
     return (
       <main className="course-detail-page">
         <div className="course-detail-container">
-          <p>{error}</p>
-          <Link to="/courses">Back to Courses</Link>
+          <div className="course-state" role="alert">
+            <span className="course-state-icon">
+              <AlertCircle size={26} />
+            </span>
+            <p>{error}</p>
+            <Link to="/courses" className="course-state-button">
+              Back to Courses
+            </Link>
+          </div>
         </div>
       </main>
     );
@@ -155,8 +217,16 @@ function CourseDetails() {
     return (
       <main className="course-detail-page">
         <div className="course-detail-container">
-          <h2>Course not found</h2>
-          <Link to="/courses">Back to All Courses</Link>
+          <div className="course-state">
+            <span className="course-state-icon">
+              <BookOpen size={26} />
+            </span>
+            <h2>Course not found</h2>
+            <p>This course may have been moved or is no longer available.</p>
+            <Link to="/courses" className="course-state-button">
+              Back to All Courses
+            </Link>
+          </div>
         </div>
       </main>
     );
@@ -164,56 +234,82 @@ function CourseDetails() {
 
   return (
     <main className="course-detail-page">
+      <div className="course-page-glow course-page-glow-one" aria-hidden="true" />
+      <div className="course-page-glow course-page-glow-two" aria-hidden="true" />
+
       <div className="course-detail-container">
-        <Link to="/courses" className="course-back-link">
-          ← Back to All Courses
-        </Link>
+        <motion.div {...riseIn(0)}>
+          <Link to="/courses" className="course-back-link">
+            <ArrowLeft size={16} className="course-back-icon" />
+            Back to All Courses
+          </Link>
+        </motion.div>
 
         {/* COURSE HERO */}
         <motion.section
-          className="course-detail-hero"
-          initial={{ opacity: 0, y: 25 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          className={`course-detail-hero ${course.banner ? "has-banner" : ""}`}
+          {...riseIn(0.1)}
         >
-          <div>
-            <span className="courses-eyebrow">
-              {course.category}
-            </span>
+          <div className="course-detail-hero-content">
+            {course.category && (
+              <span className="course-page-eyebrow">{course.category}</span>
+            )}
 
             <h1>{course.title}</h1>
-            <p>{course.description}</p>
+            {course.description && <p>{course.description}</p>}
 
             <div className="course-detail-meta">
-              <span>₹{course.price}</span>
-              <span>{classes.length} Learning Classes</span>
+              {hasPrice(course.price) && (
+                <span className="course-detail-chip is-price">₹{course.price}</span>
+              )}
+              <span className="course-detail-chip">
+                <BookOpen size={16} />
+                {classes.length} Learning Classes
+              </span>
+              <span className="course-detail-chip">
+                <FileText size={16} />
+                {pdfs.length} PDF Resources
+              </span>
             </div>
+
+            {classes.length > 0 && (
+              <button
+                type="button"
+                className="course-detail-start"
+                onClick={scrollToClasses}
+              >
+                Start Learning
+                <ArrowDown size={17} className="course-detail-start-icon" />
+              </button>
+            )}
           </div>
 
           {course.banner && (
-            <div className="course-detail-symbol">
+            <div className="course-detail-banner">
               <img src={course.banner} alt={course.title} />
             </div>
           )}
         </motion.section>
 
         {/* CLASSES SECTION */}
-        <section className="course-learning-section">
-          <div className="course-learning-heading">
-            <span className="courses-eyebrow">
-              YOUR LEARNING JOURNEY
-            </span>
-
-            <h2>Explore Classes</h2>
-
-            <p>
-              Select a class to access its learning materials and PDFs.
-            </p>
-          </div>
+        <section className="course-learning-section" ref={classesRef}>
+          <motion.div
+            className="course-learning-heading"
+            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7, ease: EASE }}
+          >
+            <span className="course-page-eyebrow">Your Learning Journey</span>
+            <h2 className="course-section-title">Explore Classes</h2>
+            <p>Select a class to access its learning materials and PDFs.</p>
+          </motion.div>
 
           {classes.length === 0 ? (
-            <div className="course-resource-empty">
-              <BookOpen size={32} />
+            <div className="course-state">
+              <span className="course-state-icon">
+                <BookOpen size={26} />
+              </span>
               <h3>No classes available yet</h3>
               <p>Classes will be added soon.</p>
             </div>
@@ -221,43 +317,46 @@ function CourseDetails() {
             <div className="course-classes-grid">
               {classes.map((item, index) => {
                 const isSelected = selectedClassId === item.id;
-
-                const resourceCount = pdfs.filter(
-                  (pdf) => pdf.classId === item.id
-                ).length;
+                const resourceCount = pdfCountByClass[item.id] || 0;
 
                 return (
                   <motion.button
                     type="button"
-                    className={`course-class-card ${
-                      isSelected ? "selected" : ""
-                    }`}
+                    className={`course-class-card ${isSelected ? "is-selected" : ""}`}
                     key={item.id}
+                    aria-pressed={isSelected}
                     onClick={() => setSelectedClassId(item.id)}
-                    initial={{ opacity: 0, y: 18 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.06 }}
-                    whileHover={{ y: -4 }}
+                    initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 18 }}
+                    whileInView={{
+                      opacity: 1,
+                      y: 0,
+                      transition: { duration: 0.5, ease: EASE, delay: (index % 4) * 0.06 },
+                    }}
+                    whileHover={
+                      reduceMotion
+                        ? undefined
+                        : { y: -4, transition: { type: "spring", stiffness: 300, damping: 22 } }
+                    }
+                    viewport={{ once: true, amount: 0.3 }}
                   >
-                    <div className="course-class-icon">
-                      <BookOpen size={22} />
-                    </div>
+                    <span className="course-class-number">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
 
-                    <div className="course-class-info">
-                      <span>CLASS {index + 1}</span>
-                      <h3>{item.title}</h3>
-
-                      <p>
+                    <span className="course-class-info">
+                      <span className="course-class-label">Class {index + 1}</span>
+                      <span className="course-class-title">{item.title}</span>
+                      <span className="course-class-description">
                         {item.description || "Explore this learning class."}
-                      </p>
-
-                      <small>
+                      </span>
+                      <span className="course-class-count">
+                        <FileText size={13} />
                         {resourceCount} PDF Resources
-                      </small>
-                    </div>
+                      </span>
+                    </span>
 
-                    <span className="course-class-arrow">
-                      {isSelected ? "✓" : "→"}
+                    <span className="course-class-arrow" aria-hidden="true">
+                      {isSelected ? <Check size={18} /> : <ArrowRight size={18} />}
                     </span>
                   </motion.button>
                 );
@@ -271,33 +370,25 @@ function CourseDetails() {
           <motion.section
             className="course-selected-resources"
             key={selectedClassId}
-            initial={{ opacity: 0, y: 18 }}
+            ref={resourcesRef}
+            aria-live="polite"
+            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35 }}
+            transition={{ duration: 0.45, ease: EASE }}
           >
             <div className="course-learning-heading">
-              <span className="courses-eyebrow">
-                SELECTED CLASS MATERIAL
-              </span>
-
-              <h2>
-                {classes.find(
-                  (item) => item.id === selectedClassId
-                )?.title}
-              </h2>
-
-              <p>
-                PDFs and learning resources for this class.
-              </p>
+              <span className="course-page-eyebrow">Selected Class Material</span>
+              <h2 className="course-section-title">{selectedClass?.title}</h2>
+              <p>PDFs and learning resources for this class.</p>
             </div>
 
             {selectedClassPDFs.length === 0 ? (
-              <div className="course-resource-empty">
-                <FileText size={32} />
+              <div className="course-state is-compact">
+                <span className="course-state-icon">
+                  <FileText size={26} />
+                </span>
                 <h3>No PDFs available in this class</h3>
-                <p>
-                  Learning materials will be added soon.
-                </p>
+                <p>Learning materials will be added soon.</p>
               </div>
             ) : (
               <div className="course-pdf-list">
@@ -305,40 +396,41 @@ function CourseDetails() {
                   <motion.div
                     className="course-pdf-item"
                     key={pdf.id}
-                    initial={{ opacity: 0, y: 15 }}
+                    initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.06 }}
+                    transition={{ duration: 0.4, ease: EASE, delay: index * 0.06 }}
                   >
-                    <div className="course-pdf-icon">
-                      PDF
+                    <div className="course-pdf-icon" aria-hidden="true">
+                      <FileText size={20} />
+                      <span>PDF</span>
                     </div>
 
                     <div className="course-pdf-info">
                       <strong>{pdf.title}</strong>
-
-                      <small>
-                        {pdf.description || "PDF Learning Material"}
-                      </small>
+                      <small>{pdf.description || "PDF Learning Material"}</small>
                     </div>
 
-                    <a
-                      href={pdf.pdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <ExternalLink size={16} />
-                      View
-                    </a>
+                    <div className="course-pdf-actions">
+                      <a
+                        href={pdf.pdfUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="course-pdf-view"
+                      >
+                        <ExternalLink size={16} />
+                        View
+                      </a>
 
-                    <a
-                      href={pdf.pdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="course-pdf-download"
-                    >
-                      <Download size={16} />
-                      Download
-                    </a>
+                      <a
+                        href={pdf.pdfUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="course-pdf-download"
+                      >
+                        <Download size={16} />
+                        Download
+                      </a>
+                    </div>
                   </motion.div>
                 ))}
               </div>

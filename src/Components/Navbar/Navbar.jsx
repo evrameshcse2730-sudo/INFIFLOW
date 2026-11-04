@@ -1,6 +1,6 @@
-
-import { useState } from "react";
-import { Menu, X, ArrowUpRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { ArrowUpRight, Menu, X } from "lucide-react";
 import "./Navbar.css";
 
 const navLinks = [
@@ -12,48 +12,219 @@ const navLinks = [
   { name: "Contact", href: "#contact" },
 ];
 
+const SECTION_IDS = navLinks.map((link) => link.href.slice(1));
+const MOBILE_BREAKPOINT = 850;
+const EASE = [0.22, 1, 0.36, 1];
+
+const INFINITY_PATH =
+  "M200,100 C250,30 330,20 360,60 C390,100 370,160 320,170 C270,180 240,140 200,100 C160,60 130,20 80,30 C30,40 10,100 40,140 C70,180 150,170 200,100 Z";
+
+const panelVariants = {
+  hidden: { opacity: 0, y: -12, scale: 0.98 },
+  show: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.35, ease: EASE, staggerChildren: 0.04, delayChildren: 0.05 },
+  },
+  exit: { opacity: 0, y: -8, scale: 0.98, transition: { duration: 0.2, ease: EASE } },
+};
+
+const panelItemVariants = {
+  hidden: { opacity: 0, y: -6 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: EASE } },
+};
+
+const fadeVariants = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { duration: 0.2 } },
+  exit: { opacity: 0, transition: { duration: 0.15 } },
+};
+
 function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [activeId, setActiveId] = useState("home");
+  const reduceMotion = useReducedMotion();
 
   const closeMenu = () => setMenuOpen(false);
 
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 24);
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    if (!("IntersectionObserver" in window)) return undefined;
+
+    const sections = SECTION_IDS.map((id) => document.getElementById(id)).filter(Boolean);
+    if (!sections.length) return undefined;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) setActiveId(entry.target.id);
+        });
+      },
+      { rootMargin: "-45% 0px -50% 0px" }
+    );
+
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+    const handleResize = () => {
+      if (window.innerWidth > MOBILE_BREAKPOINT) setMenuOpen(false);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [menuOpen]);
+
+  const pillTransition = reduceMotion
+    ? { duration: 0 }
+    : { type: "spring", stiffness: 380, damping: 32 };
+
   return (
-    <header className="iniflow-navbar">
-      <nav className="navbar-container">
-        <a href="#home" className="navbar-logo" onClick={closeMenu}>
-          INI<span>FLOW.</span>
+    <motion.header
+      className={`iniflow-navbar ${scrolled || menuOpen ? "is-scrolled" : ""}`}
+      initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.7, ease: EASE }}
+    >
+      <nav className="navbar-container" aria-label="Main navigation">
+        <a href="#home" className="navbar-logo" onClick={closeMenu} aria-label="INIFLOW home">
+          <svg className="navbar-logo-mark" viewBox="-30 -20 460 240" aria-hidden="true">
+            <defs>
+              <linearGradient id="navbarLogoGradient" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#5fd4ff" />
+                <stop offset="40%" stopColor="#1f8bff" />
+                <stop offset="100%" stopColor="#0040d8" />
+              </linearGradient>
+            </defs>
+            <path
+              d={INFINITY_PATH}
+              fill="none"
+              stroke="url(#navbarLogoGradient)"
+              strokeWidth="44"
+              strokeLinejoin="round"
+            />
+            <path
+              d={INFINITY_PATH}
+              fill="none"
+              stroke="rgba(255, 255, 255, 0.5)"
+              strokeWidth="10"
+              strokeLinejoin="round"
+              transform="translate(-3 -10)"
+            />
+          </svg>
+          <span className="navbar-logo-text">INIFLOW</span>
         </a>
 
-        <div className={`navbar-links ${menuOpen ? "active" : ""}`}>
-          {navLinks.map((link) => (
-            <a
-              key={link.name}
-              href={link.href}
-              onClick={closeMenu}
-            >
-              {link.name}
-            </a>
-          ))}
+        <div className="navbar-links">
+          {navLinks.map((link) => {
+            const isActive = activeId === link.href.slice(1);
 
-          <a
-            href="#contact"
-            className="navbar-cta"
-            onClick={closeMenu}
-          >
-            Let's Talk <ArrowUpRight size={17} />
-          </a>
+            return (
+              <a
+                key={link.name}
+                href={link.href}
+                className={`navbar-link ${isActive ? "is-active" : ""}`}
+                aria-current={isActive ? "location" : undefined}
+                onClick={closeMenu}
+              >
+                {isActive && (
+                  <motion.span
+                    layoutId="navbar-active-pill"
+                    className="navbar-active-pill"
+                    transition={pillTransition}
+                  />
+                )}
+                <span className="navbar-link-text">{link.name}</span>
+              </a>
+            );
+          })}
         </div>
 
+        <a href="#contact" className="navbar-cta" onClick={closeMenu}>
+          Let's Talk
+          <ArrowUpRight size={16} className="navbar-cta-icon" />
+        </a>
+
         <button
+          type="button"
           className="navbar-menu-button"
-          onClick={() => setMenuOpen(!menuOpen)}
+          onClick={() => setMenuOpen((open) => !open)}
           aria-label={menuOpen ? "Close menu" : "Open menu"}
           aria-expanded={menuOpen}
+          aria-controls="navbar-mobile-panel"
         >
-          {menuOpen ? <X size={25} /> : <Menu size={25} />}
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.span
+              key={menuOpen ? "close" : "open"}
+              className="navbar-menu-icon"
+              initial={reduceMotion ? { opacity: 0 } : { opacity: 0, rotate: -90 }}
+              animate={{ opacity: 1, rotate: 0 }}
+              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, rotate: 90 }}
+              transition={{ duration: 0.2 }}
+            >
+              {menuOpen ? <X size={22} /> : <Menu size={22} />}
+            </motion.span>
+          </AnimatePresence>
         </button>
+
+        <AnimatePresence>
+          {menuOpen && (
+            <motion.div
+              id="navbar-mobile-panel"
+              className="navbar-mobile-panel"
+              variants={reduceMotion ? fadeVariants : panelVariants}
+              initial="hidden"
+              animate="show"
+              exit="exit"
+            >
+              {navLinks.map((link) => {
+                const isActive = activeId === link.href.slice(1);
+
+                return (
+                  <motion.a
+                    key={link.name}
+                    href={link.href}
+                    className={`navbar-mobile-link ${isActive ? "is-active" : ""}`}
+                    aria-current={isActive ? "location" : undefined}
+                    onClick={closeMenu}
+                    variants={reduceMotion ? fadeVariants : panelItemVariants}
+                  >
+                    {link.name}
+                  </motion.a>
+                );
+              })}
+
+              <motion.a
+                href="#contact"
+                className="navbar-mobile-cta"
+                onClick={closeMenu}
+                variants={reduceMotion ? fadeVariants : panelItemVariants}
+              >
+                Let's Talk <ArrowUpRight size={17} />
+              </motion.a>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </nav>
-    </header>
+    </motion.header>
   );
 }
 

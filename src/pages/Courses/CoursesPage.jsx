@@ -1,7 +1,7 @@
-
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Link } from "react-router-dom";
+import { AlertCircle, ArrowRight, BookOpen, Search } from "lucide-react";
 import {
   collection,
   getDocs,
@@ -12,6 +12,39 @@ import {
 import { db } from "../../firebase/firebase";
 import "./CoursePages.css";
 
+const ALL_CATEGORIES = "All";
+const EASE = [0.22, 1, 0.36, 1];
+
+const heroVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.12 } },
+};
+
+const titleVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.1 } },
+};
+
+const fadeUpVariants = {
+  hidden: { opacity: 0, y: 24 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: EASE } },
+};
+
+const fadeOnlyVariants = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { duration: 0.5 } },
+};
+
+const lineRevealVariants = {
+  hidden: { y: "110%" },
+  show: { y: "0%", transition: { duration: 0.9, ease: EASE } },
+};
+
+const heroLines = [
+  { text: "Learn Something" },
+  { accent: "Extraordinary." },
+];
+
 function createSlug(title = "") {
   return title
     .toLowerCase()
@@ -20,10 +53,26 @@ function createSlug(title = "") {
     .replace(/^-|-$/g, "");
 }
 
+const getCategory = (course) =>
+  typeof course.category === "string" ? course.category.trim() : "";
+
+const hasPrice = (price) =>
+  price !== undefined && price !== null && String(price).trim() !== "";
+
+const handleCardPointerMove = (event) => {
+  const card = event.currentTarget;
+  const rect = card.getBoundingClientRect();
+  card.style.setProperty("--mx", `${event.clientX - rect.left}px`);
+  card.style.setProperty("--my", `${event.clientY - rect.top}px`);
+};
+
 function CoursesPage() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeCategory, setActiveCategory] = useState(ALL_CATEGORIES);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -55,91 +104,268 @@ function CoursesPage() {
     fetchCourses();
   }, []);
 
+  const categories = useMemo(() => {
+    const unique = [];
+    courses.forEach((course) => {
+      const category = getCategory(course);
+      if (category && !unique.includes(category)) unique.push(category);
+    });
+    return unique;
+  }, [courses]);
+
+  const currentCategory = categories.includes(activeCategory)
+    ? activeCategory
+    : ALL_CATEGORIES;
+
+  const filteredCourses = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+
+    return courses.filter((course) => {
+      if (currentCategory !== ALL_CATEGORIES && getCategory(course) !== currentCategory) {
+        return false;
+      }
+      if (!term) return true;
+
+      return [course.title, course.description, course.category].some(
+        (value) => typeof value === "string" && value.toLowerCase().includes(term)
+      );
+    });
+  }, [courses, currentCategory, searchTerm]);
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setActiveCategory(ALL_CATEGORIES);
+  };
+
+  const fadeUp = reduceMotion ? fadeOnlyVariants : fadeUpVariants;
+  const lineReveal = reduceMotion ? fadeOnlyVariants : lineRevealVariants;
+  const showToolbar = !loading && !error && courses.length > 0;
+
   return (
     <main className="course-page">
-      <section className="course-page-hero">
-        <span className="courses-eyebrow">
-          INIFLOW LEARNING SPACE
-        </span>
+      <div className="course-page-glow course-page-glow-one" aria-hidden="true" />
+      <div className="course-page-glow course-page-glow-two" aria-hidden="true" />
 
-        <h1>
-          Learn Something
-          <span> Extraordinary.</span>
-        </h1>
+      <motion.section
+        className="course-page-hero"
+        initial="hidden"
+        animate="show"
+        variants={heroVariants}
+      >
+        <motion.span className="course-page-eyebrow" variants={fadeUp}>
+          INIFLOW Learning Space
+        </motion.span>
 
-        <p>
+        <motion.h1
+          className="course-page-title"
+          variants={titleVariants}
+          aria-label="Learn Something Extraordinary."
+        >
+          {heroLines.map((line) => (
+            <span className="course-page-title-line" key={line.text || line.accent}>
+              <motion.span className="course-page-title-inner" variants={lineReveal}>
+                {line.text}
+                {line.accent && (
+                  <span className="course-page-gradient-text">{line.accent}</span>
+                )}
+              </motion.span>
+            </span>
+          ))}
+        </motion.h1>
+
+        <motion.p className="course-page-subtitle" variants={fadeUp}>
           Discover creative courses, build new skills and
           turn your ideas into reality.
-        </p>
-      </section>
+        </motion.p>
+      </motion.section>
 
       <section className="course-catalog">
-        <div className="course-catalog-heading">
+        <motion.div
+          className="course-catalog-heading"
+          initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7, ease: EASE }}
+        >
           <div>
-            <span className="courses-eyebrow">
-              EXPLORE & LEARN
-            </span>
-            <h2>All Courses</h2>
+            <span className="course-page-eyebrow">Explore & Learn</span>
+            <h2 className="course-section-title">All Courses</h2>
           </div>
-        </div>
+
+          {showToolbar && (
+            <span className="course-catalog-count">
+              {filteredCourses.length} of {courses.length} courses
+            </span>
+          )}
+        </motion.div>
+
+        {showToolbar && (
+          <motion.div
+            className="course-catalog-toolbar"
+            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, ease: EASE, delay: 0.1 }}
+          >
+            <label className="course-search">
+              <span className="course-sr-only">Search courses</span>
+              <Search size={18} className="course-search-icon" aria-hidden="true" />
+              <input
+                type="search"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Search courses..."
+              />
+            </label>
+
+            {categories.length > 1 && (
+              <div
+                className="course-filters"
+                role="group"
+                aria-label="Filter courses by category"
+              >
+                {[ALL_CATEGORIES, ...categories].map((category) => {
+                  const isActive = category === currentCategory;
+
+                  return (
+                    <button
+                      key={category}
+                      type="button"
+                      className={`course-filter ${isActive ? "is-active" : ""}`}
+                      aria-pressed={isActive}
+                      onClick={() => setActiveCategory(category)}
+                    >
+                      {isActive && (
+                        <motion.span
+                          layoutId="course-filter-pill"
+                          className="course-filter-pill"
+                          transition={
+                            reduceMotion
+                              ? { duration: 0 }
+                              : { type: "spring", stiffness: 380, damping: 32 }
+                          }
+                        />
+                      )}
+                      <span className="course-filter-text">{category}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </motion.div>
+        )}
 
         {loading ? (
-          <div className="course-resource-empty">
-            <p>Loading courses...</p>
+          <div className="course-catalog-grid" role="status">
+            <span className="course-sr-only">Loading courses...</span>
+            {[0, 1, 2, 3, 4, 5].map((item) => (
+              <div className="course-skeleton-card" key={item} aria-hidden="true">
+                <span className="course-skeleton-media" />
+                <span className="course-skeleton-line" />
+                <span className="course-skeleton-line is-short" />
+              </div>
+            ))}
           </div>
         ) : error ? (
-          <div className="course-resource-empty">
+          <div className="course-state" role="alert">
+            <span className="course-state-icon">
+              <AlertCircle size={26} />
+            </span>
             <p>{error}</p>
           </div>
         ) : courses.length === 0 ? (
-          <div className="course-resource-empty">
+          <div className="course-state">
+            <span className="course-state-icon">
+              <BookOpen size={26} />
+            </span>
             <h3>No courses available</h3>
             <p>New courses will be added soon.</p>
           </div>
+        ) : filteredCourses.length === 0 ? (
+          <div className="course-state">
+            <span className="course-state-icon">
+              <Search size={26} />
+            </span>
+            <h3>No matching courses</h3>
+            <p>Try a different search or category.</p>
+            <button type="button" className="course-state-button" onClick={clearFilters}>
+              Clear filters
+            </button>
+          </div>
         ) : (
           <div className="course-catalog-grid">
-            {courses.map((course, index) => (
-              <motion.article
-                key={course.id}
-                className="catalog-course-card"
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{
-                  duration: 0.5,
-                  delay: index * 0.1,
-                }}
-                whileHover={{ y: -8 }}
-              >
-                <div className="catalog-course-art">
-                  {course.banner ? (
-                    <img
-                      src={course.banner}
-                      alt={course.title}
-                    />
-                  ) : (
-                    <span>INIFLOW</span>
-                  )}
-                </div>
+            <AnimatePresence>
+              {filteredCourses.map((course, index) => {
+                const coursePath = `/courses/${createSlug(course.title)}`;
+                const category = getCategory(course);
 
-                <div className="catalog-course-info">
-                  <span className="course-preview-category">
-                    {course.category}
-                  </span>
+                return (
+                  <motion.article
+                    key={course.id}
+                    className="catalog-course-card"
+                    layout={!reduceMotion}
+                    initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 30 }}
+                    whileInView={{
+                      opacity: 1,
+                      y: 0,
+                      transition: { duration: 0.6, ease: EASE, delay: (index % 3) * 0.08 },
+                    }}
+                    exit={{
+                      opacity: 0,
+                      scale: reduceMotion ? 1 : 0.95,
+                      transition: { duration: 0.25 },
+                    }}
+                    whileHover={
+                      reduceMotion
+                        ? undefined
+                        : { y: -8, transition: { type: "spring", stiffness: 260, damping: 22 } }
+                    }
+                    transition={{ layout: { duration: 0.5, ease: EASE } }}
+                    viewport={{ once: true, amount: 0.15 }}
+                    onPointerMove={handleCardPointerMove}
+                  >
+                    <Link
+                      to={coursePath}
+                      className="catalog-course-art"
+                      tabIndex={-1}
+                      aria-hidden="true"
+                    >
+                      {course.banner ? (
+                        <img src={course.banner} alt="" loading="lazy" decoding="async" />
+                      ) : (
+                        <span className="catalog-course-fallback">INIFLOW</span>
+                      )}
+                      <span className="catalog-course-shade" />
+                    </Link>
 
-                  <h3>{course.title}</h3>
+                    <div className="catalog-course-info">
+                      {category && (
+                        <span className="catalog-course-category">{category}</span>
+                      )}
 
-                  <p>{course.description}</p>
+                      <h3>{course.title}</h3>
 
-                  <div className="catalog-course-meta">
-                    <span>₹{course.price}</span>
-                  </div>
+                      {course.description && <p>{course.description}</p>}
 
-                  <Link to={`/courses/${createSlug(course.title)}`}>
-                    View Course <span>↗</span>
-                  </Link>
-                </div>
-              </motion.article>
-            ))}
+                      <div className="catalog-course-footer">
+                        {hasPrice(course.price) && (
+                          <span className="catalog-course-price">₹{course.price}</span>
+                        )}
+
+                        <Link
+                          to={coursePath}
+                          className="catalog-course-link"
+                          aria-label={`View course: ${course.title}`}
+                        >
+                          View Course
+                          <ArrowRight size={16} className="catalog-course-link-icon" />
+                        </Link>
+                      </div>
+                    </div>
+                  </motion.article>
+                );
+              })}
+            </AnimatePresence>
           </div>
         )}
       </section>
