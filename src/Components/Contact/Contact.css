@@ -3,6 +3,8 @@
   --contact-muted: #4f5b78;
   --contact-blue: #0a6cff;
   --contact-blue-deep: #0050e6;
+  --contact-whatsapp: #25d366;
+  --contact-whatsapp-deep: #128c4a;
   --contact-ease: cubic-bezier(0.22, 1, 0.36, 1);
 
   position: relative;
@@ -143,6 +145,79 @@
   font-weight: 600;
 }
 
+/* WhatsApp quick chat */
+
+.contact-whatsapp-wrap {
+  margin-top: 30px;
+}
+
+.contact-whatsapp {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 54px;
+  padding: 14px 28px;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #3ee07a 0%, var(--contact-whatsapp) 50%, var(--contact-whatsapp-deep) 100%);
+  color: #ffffff;
+  font-size: 15.5px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow:
+    0 14px 30px -12px rgba(18, 140, 74, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition:
+    transform 0.35s var(--contact-ease),
+    box-shadow 0.35s var(--contact-ease);
+}
+
+.contact-whatsapp::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.45) 50%,
+    transparent 70%
+  );
+  transform: translateX(-120%);
+  transition: transform 0.8s var(--contact-ease);
+}
+
+.contact-whatsapp:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 20px 38px -14px rgba(18, 140, 74, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.contact-whatsapp:hover::before {
+  transform: translateX(120%);
+}
+
+.contact-whatsapp:active {
+  transform: translateY(0) scale(0.99);
+}
+
+.contact-whatsapp:focus-visible {
+  outline: 3px solid rgba(37, 211, 102, 0.45);
+  outline-offset: 3px;
+}
+
+.contact-whatsapp-icon {
+  transition: transform 0.45s var(--contact-ease);
+}
+
+.contact-whatsapp:hover .contact-whatsapp-icon {
+  transform: rotate(-12deg) scale(1.1);
+}
+
 /* Paper plane */
 
 .contact-plane {
@@ -253,6 +328,12 @@
   color: var(--contact-blue);
 }
 
+.contact-field label .contact-optional {
+  color: #9aa6bd;
+  font-size: 0.85em;
+  font-weight: 500;
+}
+
 .contact-field input:focus + label,
 .contact-field input:not(:placeholder-shown) + label,
 .contact-field textarea:focus + label,
@@ -304,6 +385,7 @@
   border-radius: 999px;
   background: linear-gradient(135deg, #1f8bff 0%, #0a6cff 55%, #0050e6 100%);
   color: #ffffff;
+  font-family: inherit;
   font-size: 15.5px;
   font-weight: 700;
   box-shadow:
@@ -516,6 +598,10 @@
     margin-right: auto;
     text-align: left;
   }
+
+  .contact-whatsapp {
+    width: 100%;
+  }
 }
 
 /* Reduced motion */
@@ -534,7 +620,10 @@
   .contact-info-icon,
   .contact-submit,
   .contact-submit::before,
-  .contact-submit-icon {
+  .contact-submit-icon,
+  .contact-whatsapp,
+  .contact-whatsapp::before,
+  .contact-whatsapp-icon {
     transition-duration: 0.01ms;
   }
 }

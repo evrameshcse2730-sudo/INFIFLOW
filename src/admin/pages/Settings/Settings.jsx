@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import {
   doc,
@@ -7,6 +8,7 @@ import {
 } from "firebase/firestore";
 
 import { db } from "../../../firebase/firebase";
+import { uploadToCloudinary } from "../../../firebase/cloudinary";
 import "./Settings.css";
 
 const HERO_DEFAULTS = {
@@ -27,6 +29,7 @@ const initialSettings = {
   ...HERO_DEFAULTS,
   aboutTitle: "",
   aboutDescription: "",
+  aboutImageUrl: "",
   contactEmail: "",
   phone: "",
   whatsapp: "",
@@ -47,17 +50,21 @@ const LOGO_OPTIONS = [
   { value: "hidden", label: "Hide logo" },
 ];
 
-const toText = (value) => (value === null || value === undefined ? "" : String(value));
+const toText = (value) =>
+  value === null || value === undefined ? "" : String(value);
 
-const isHttpsUrl = (value) => /^https:\/\//i.test(toText(value).trim());
+const isHttpsUrl = (value) =>
+  /^https:\/\//i.test(toText(value).trim());
 
 function Settings() {
   const [form, setForm] = useState(initialSettings);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingAboutImage, setUploadingAboutImage] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
+  // Fetch existing website settings
   useEffect(() => {
     const fetchSettings = async () => {
       try {
@@ -81,37 +88,101 @@ function Settings() {
     fetchSettings();
   }, []);
 
+  // Handle normal input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
+
     setForm((previous) => ({
       ...previous,
       [name]: value,
     }));
   };
 
+  // Upload transparent About PNG to Cloudinary
+  const handleAboutImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    setError("");
+    setMessage("");
+
+    if (file.type !== "image/png") {
+      setError("Please select a PNG image.");
+      e.target.value = "";
+      return;
+    }
+
+    try {
+      setUploadingAboutImage(true);
+
+      const uploaded = await uploadToCloudinary(file, "image");
+
+      setForm((previous) => ({
+        ...previous,
+        aboutImageUrl: uploaded.url,
+      }));
+
+      setMessage(
+        "About image uploaded successfully. Click Save Website Settings."
+      );
+    } catch (err) {
+      console.error("About image upload error:", err);
+      setError(err.message || "Unable to upload About image.");
+    } finally {
+      setUploadingAboutImage(false);
+      e.target.value = "";
+    }
+  };
+
+  // Remove About image URL from settings
+  const removeAboutImage = () => {
+    setForm((previous) => ({
+      ...previous,
+      aboutImageUrl: "",
+    }));
+
+    setMessage("About image removed. Click Save Website Settings.");
+    setError("");
+  };
+
+  // Reset only Hero settings
   const resetHero = () => {
     setForm((previous) => ({
       ...previous,
       ...HERO_DEFAULTS,
     }));
+
     setError("");
     setMessage("Hero section reset to defaults. Click Save to apply.");
   };
 
+  // Save all website settings
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (uploadingAboutImage) {
+      setError("Please wait until the image upload finishes.");
+      return;
+    }
+
     const invalidUrlField = HERO_URL_FIELDS.find(
-      ({ name }) => toText(form[name]).trim() && !isHttpsUrl(form[name])
+      ({ name }) =>
+        toText(form[name]).trim() && !isHttpsUrl(form[name])
     );
 
     if (invalidUrlField) {
       setMessage("");
-      setError(`${invalidUrlField.label} must start with https://`);
+      setError(
+        `${invalidUrlField.label} must start with https://`
+      );
       return;
     }
 
-    if (form.heroLogoMode === "image" && !toText(form.heroLogoUrl).trim()) {
+    if (
+      form.heroLogoMode === "image" &&
+      !toText(form.heroLogoUrl).trim()
+    ) {
       setMessage("");
       setError("Add a custom logo URL or choose another logo option.");
       return;
@@ -140,27 +211,49 @@ function Settings() {
   };
 
   if (loading) {
-    return <div className="settings-loading">Loading settings...</div>;
+    return (
+      <div className="settings-loading">
+        Loading settings...
+      </div>
+    );
   }
 
-  const videoPreview = isHttpsUrl(form.heroVideoUrl) ? toText(form.heroVideoUrl).trim() : "";
-  const posterPreview = isHttpsUrl(form.heroPosterUrl) ? toText(form.heroPosterUrl).trim() : "";
-  const logoPreview = isHttpsUrl(form.heroLogoUrl) ? toText(form.heroLogoUrl).trim() : "";
+  const videoPreview = isHttpsUrl(form.heroVideoUrl)
+    ? toText(form.heroVideoUrl).trim()
+    : "";
+
+  const posterPreview = isHttpsUrl(form.heroPosterUrl)
+    ? toText(form.heroPosterUrl).trim()
+    : "";
+
+  const logoPreview = isHttpsUrl(form.heroLogoUrl)
+    ? toText(form.heroLogoUrl).trim()
+    : "";
 
   return (
     <div className="settings-manager">
       <div className="settings-header">
         <div>
-          <span className="settings-eyebrow">WEBSITE CONFIGURATION</span>
+          <span className="settings-eyebrow">
+            WEBSITE CONFIGURATION
+          </span>
           <h1>Website Settings</h1>
-          <p>Manage your website information and contact details.</p>
+          <p>
+            Manage your website information and contact details.
+          </p>
         </div>
       </div>
 
-      {message && <div className="settings-success">{message}</div>}
-      {error && <div className="settings-error">{error}</div>}
+      {message && (
+        <div className="settings-success">{message}</div>
+      )}
+
+      {error && (
+        <div className="settings-error">{error}</div>
+      )}
 
       <form className="settings-form" onSubmit={handleSubmit}>
+        {/* GENERAL INFORMATION */}
         <section className="settings-card">
           <h2>General Information</h2>
           <p>Basic website details.</p>
@@ -188,11 +281,14 @@ function Settings() {
           </div>
         </section>
 
+        {/* HERO SECTION */}
         <section className="settings-card">
           <div className="settings-card-header">
             <div>
               <h2>Hero Section</h2>
-              <p>Homepage banner content, background video and logo.</p>
+              <p>
+                Homepage banner content, background video and logo.
+              </p>
             </div>
 
             <button
@@ -206,6 +302,7 @@ function Settings() {
 
           <div className="settings-subsection">
             <h3>Content</h3>
+
             <p className="settings-hint">
               Leave a field empty to use the default homepage text.
             </p>
@@ -223,7 +320,9 @@ function Settings() {
               </div>
 
               <div className="settings-field">
-                <label htmlFor="heroAccent">Highlighted Line (blue gradient)</label>
+                <label htmlFor="heroAccent">
+                  Highlighted Line (blue gradient)
+                </label>
                 <input
                   id="heroAccent"
                   name="heroAccent"
@@ -250,7 +349,9 @@ function Settings() {
             </div>
 
             <div className="settings-field">
-              <label htmlFor="heroDescription">Tagline Under Heading</label>
+              <label htmlFor="heroDescription">
+                Tagline Under Heading
+              </label>
               <input
                 id="heroDescription"
                 name="heroDescription"
@@ -264,16 +365,21 @@ function Settings() {
             </div>
           </div>
 
+          {/* BACKGROUND VIDEO */}
           <div className="settings-subsection">
             <h3>Background Video</h3>
+
             <p className="settings-hint">
-              Upload the video to Cloudinary and paste its https:// link. Use a short,
-              muted-friendly MP4 (under 10 MB) for fast loading.
+              Upload the video to Cloudinary and paste its https://
+              link. Use a short, muted-friendly MP4 (under 10 MB)
+              for fast loading.
             </p>
 
             <div className="settings-grid">
               <div className="settings-field">
-                <label htmlFor="heroVideoUrl">Background Video URL</label>
+                <label htmlFor="heroVideoUrl">
+                  Background Video URL
+                </label>
                 <input
                   id="heroVideoUrl"
                   type="url"
@@ -282,6 +388,7 @@ function Settings() {
                   onChange={handleChange}
                   placeholder="https://res.cloudinary.com/.../video.mp4"
                 />
+
                 {videoPreview && (
                   <div className="settings-preview">
                     <video
@@ -298,7 +405,9 @@ function Settings() {
               </div>
 
               <div className="settings-field">
-                <label htmlFor="heroPosterUrl">Poster Image URL</label>
+                <label htmlFor="heroPosterUrl">
+                  Poster Image URL
+                </label>
                 <input
                   id="heroPosterUrl"
                   type="url"
@@ -307,12 +416,18 @@ function Settings() {
                   onChange={handleChange}
                   placeholder="https://res.cloudinary.com/.../poster.jpg"
                 />
+
                 <span className="settings-hint">
-                  Shown while the video loads, and to visitors who prefer reduced motion.
+                  Shown while the video loads, and to visitors who
+                  prefer reduced motion.
                 </span>
+
                 {posterPreview && (
                   <div className="settings-preview">
-                    <img src={posterPreview} alt="Hero poster preview" />
+                    <img
+                      src={posterPreview}
+                      alt="Hero poster preview"
+                    />
                   </div>
                 )}
               </div>
@@ -321,8 +436,11 @@ function Settings() {
             <div className="settings-field">
               <label htmlFor="heroOverlay">
                 Light Overlay Strength
-                <span className="settings-range-value">{form.heroOverlay}%</span>
+                <span className="settings-range-value">
+                  {form.heroOverlay}%
+                </span>
               </label>
+
               <input
                 id="heroOverlay"
                 className="settings-range"
@@ -334,21 +452,30 @@ function Settings() {
                 value={form.heroOverlay}
                 onChange={handleChange}
               />
+
               <span className="settings-hint">
-                Higher keeps the text easier to read. Lower shows more of the video.
+                Higher keeps the text easier to read. Lower shows
+                more of the video.
               </span>
             </div>
           </div>
 
+          {/* HERO LOGO */}
           <div className="settings-subsection">
             <h3>Right Side Logo</h3>
 
-            <div className="settings-segmented" role="radiogroup" aria-label="Hero logo">
+            <div
+              className="settings-segmented"
+              role="radiogroup"
+              aria-label="Hero logo"
+            >
               {LOGO_OPTIONS.map((option) => (
                 <label
                   key={option.value}
                   className={`settings-segment ${
-                    form.heroLogoMode === option.value ? "is-active" : ""
+                    form.heroLogoMode === option.value
+                      ? "is-active"
+                      : ""
                   }`}
                 >
                   <input
@@ -365,7 +492,9 @@ function Settings() {
 
             {form.heroLogoMode === "image" && (
               <div className="settings-field settings-logo-field">
-                <label htmlFor="heroLogoUrl">Custom Logo URL</label>
+                <label htmlFor="heroLogoUrl">
+                  Custom Logo URL
+                </label>
                 <input
                   id="heroLogoUrl"
                   type="url"
@@ -374,12 +503,18 @@ function Settings() {
                   onChange={handleChange}
                   placeholder="https://res.cloudinary.com/.../logo.png"
                 />
+
                 <span className="settings-hint">
-                  Use a transparent PNG, WebP or SVG. It floats and tilts like the default logo.
+                  Use a transparent PNG, WebP or SVG. It floats
+                  and tilts like the default logo.
                 </span>
+
                 {logoPreview && (
                   <div className="settings-preview is-logo">
-                    <img src={logoPreview} alt="Custom logo preview" />
+                    <img
+                      src={logoPreview}
+                      alt="Custom logo preview"
+                    />
                   </div>
                 )}
               </div>
@@ -387,13 +522,15 @@ function Settings() {
           </div>
         </section>
 
+        {/* ABOUT SECTION */}
         <section className="settings-card">
           <h2>About Section</h2>
           <p>Introduce your creative brand.</p>
 
           <div className="settings-field">
-            <label>About Heading</label>
+            <label htmlFor="aboutTitle">About Heading</label>
             <input
+              id="aboutTitle"
               name="aboutTitle"
               value={form.aboutTitle}
               onChange={handleChange}
@@ -402,8 +539,11 @@ function Settings() {
           </div>
 
           <div className="settings-field">
-            <label>About Description</label>
+            <label htmlFor="aboutDescription">
+              About Description
+            </label>
             <textarea
+              id="aboutDescription"
               name="aboutDescription"
               value={form.aboutDescription}
               onChange={handleChange}
@@ -411,16 +551,61 @@ function Settings() {
               placeholder="About your work and experience"
             />
           </div>
+
+          {/* ABOUT PNG UPLOAD */}
+          <div className="settings-field">
+            <label htmlFor="aboutImage">
+              About Person PNG Image
+            </label>
+
+            <input
+              id="aboutImage"
+              type="file"
+              accept="image/png"
+              onChange={handleAboutImageUpload}
+              disabled={uploadingAboutImage}
+            />
+
+            <span className="settings-hint">
+              Upload a transparent PNG image. Recommended:
+              high-resolution image with transparent background.
+            </span>
+
+            {uploadingAboutImage && (
+              <p className="settings-hint">
+                Uploading image to Cloudinary...
+              </p>
+            )}
+
+            {form.aboutImageUrl && (
+              <div className="settings-preview is-about-image">
+                <img
+                  src={form.aboutImageUrl}
+                  alt="About person preview"
+                />
+
+                <button
+                  type="button"
+                  className="settings-secondary-button"
+                  onClick={removeAboutImage}
+                >
+                  Remove Image
+                </button>
+              </div>
+            )}
+          </div>
         </section>
 
+        {/* CONTACT INFORMATION */}
         <section className="settings-card">
           <h2>Contact Information</h2>
           <p>Visitors can use these details to contact you.</p>
 
           <div className="settings-grid">
             <div className="settings-field">
-              <label>Contact Email</label>
+              <label htmlFor="contactEmail">Contact Email</label>
               <input
+                id="contactEmail"
                 type="email"
                 name="contactEmail"
                 value={form.contactEmail}
@@ -430,8 +615,9 @@ function Settings() {
             </div>
 
             <div className="settings-field">
-              <label>Phone Number</label>
+              <label htmlFor="phone">Phone Number</label>
               <input
+                id="phone"
                 name="phone"
                 value={form.phone}
                 onChange={handleChange}
@@ -440,8 +626,9 @@ function Settings() {
             </div>
 
             <div className="settings-field">
-              <label>WhatsApp Number</label>
+              <label htmlFor="whatsapp">WhatsApp Number</label>
               <input
+                id="whatsapp"
                 name="whatsapp"
                 value={form.whatsapp}
                 onChange={handleChange}
@@ -451,14 +638,16 @@ function Settings() {
           </div>
         </section>
 
+        {/* SOCIAL MEDIA */}
         <section className="settings-card">
           <h2>Social Media</h2>
           <p>Connect your social media profiles.</p>
 
           <div className="settings-grid">
             <div className="settings-field">
-              <label>Instagram URL</label>
+              <label htmlFor="instagram">Instagram URL</label>
               <input
+                id="instagram"
                 type="url"
                 name="instagram"
                 value={form.instagram}
@@ -468,8 +657,9 @@ function Settings() {
             </div>
 
             <div className="settings-field">
-              <label>YouTube URL</label>
+              <label htmlFor="youtube">YouTube URL</label>
               <input
+                id="youtube"
                 type="url"
                 name="youtube"
                 value={form.youtube}
@@ -480,11 +670,14 @@ function Settings() {
           </div>
         </section>
 
+        {/* FOOTER */}
         <section className="settings-card">
           <h2>Footer</h2>
+
           <div className="settings-field">
-            <label>Footer Text</label>
+            <label htmlFor="footerText">Footer Text</label>
             <input
+              id="footerText"
               name="footerText"
               value={form.footerText}
               onChange={handleChange}
@@ -493,8 +686,12 @@ function Settings() {
           </div>
         </section>
 
+        {/* SAVE */}
         <div className="settings-save-area">
-          <button type="submit" disabled={saving}>
+          <button
+            type="submit"
+            disabled={saving || uploadingAboutImage}
+          >
             {saving ? "Saving..." : "Save Website Settings"}
           </button>
         </div>

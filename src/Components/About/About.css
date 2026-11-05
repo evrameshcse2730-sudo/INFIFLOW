@@ -24,6 +24,7 @@
 /* Content */
 
 .about-content {
+  min-width: 0;
   max-width: 580px;
 }
 
@@ -44,6 +45,7 @@
   font-weight: 800;
   line-height: 1.08;
   letter-spacing: -0.03em;
+  overflow-wrap: break-word;
 }
 
 .about-title-line {
@@ -55,6 +57,7 @@
 
 .about-title-inner {
   display: inline-block;
+  max-width: 100%;
   will-change: transform;
 }
 
@@ -72,6 +75,7 @@
   color: var(--about-muted);
   font-size: 16.5px;
   line-height: 1.8;
+  overflow-wrap: break-word;
 }
 
 .about-description + .about-description {
@@ -170,15 +174,15 @@
   perspective: 1200px;
 }
 
+/* Outer card: shape, background, border, shadow and tilt. Does not clip. */
 .about-visual-card {
+  --about-card-radius: 32px;
+
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 5;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.9);
-  border-radius: 32px;
+  border-radius: var(--about-card-radius);
   background:
     radial-gradient(circle at 25% 15%, rgba(255, 255, 255, 0.95), transparent 45%),
     linear-gradient(150deg, #e3f1ff 0%, #d4e8ff 45%, #c6f0ff 100%);
@@ -187,8 +191,22 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
+/* Inner layer: clips every child to the rounded card and owns the layer order. */
+.about-card-inner {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: calc(var(--about-card-radius) - 1px);
+  clip-path: inset(0 round calc(var(--about-card-radius) - 1px));
+}
+
+/* Layer 0: decorative orbits */
 .about-orbit {
   position: absolute;
+  z-index: 0;
   aspect-ratio: 1;
   border-radius: 50%;
   pointer-events: none;
@@ -206,6 +224,7 @@
   box-shadow: 0 0 40px rgba(10, 108, 255, 0.08);
 }
 
+/* Layer 1: pointer glare */
 .about-card-glare {
   position: absolute;
   inset: 0;
@@ -213,6 +232,7 @@
   pointer-events: none;
 }
 
+/* Layer 2: fallback typography, shown only when no image is uploaded */
 .about-words {
   position: relative;
   z-index: 2;
@@ -249,6 +269,28 @@
 
 .about-symbol.is-spinning {
   animation: about-rotate 14s linear infinite;
+}
+
+/* Layer 3: uploaded portrait, full card width, standing on the bottom edge */
+.about-portrait-layer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -8px;
+  z-index: 3;
+  height: 94%;
+  pointer-events: none;
+}
+
+.about-portrait {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+  object-position: center bottom;
+  filter: drop-shadow(0 18px 24px rgba(10, 40, 90, 0.22));
 }
 
 /* Background */
@@ -331,7 +373,7 @@
   }
 
   .about-visual-reveal {
-    max-width: 380px;
+    max-width: 400px;
   }
 }
 
@@ -350,7 +392,11 @@
   }
 
   .about-visual-reveal {
-    max-width: 320px;
+    max-width: 340px;
+  }
+
+  .about-visual-card {
+    --about-card-radius: 26px;
   }
 
   .about-word {

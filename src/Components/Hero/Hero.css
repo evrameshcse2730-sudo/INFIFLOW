@@ -704,3 +704,896 @@
     transition-duration: 0.01ms;
   }
 }
+
+/* =========================================
+   HERO SECTION - OVERLAP FIX
+   Tablet, Mobile & Desktop
+========================================= */
+
+/* Tablet and smaller laptops */
+@media (max-width: 900px) {
+  .hero-section {
+    padding: 120px 6% 70px;
+  }
+
+  .hero-inner {
+    width: 100%;
+  }
+
+  .hero-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 42px;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 5;
+    width: 100%;
+    max-width: 680px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .hero-eyebrow {
+    margin-bottom: 16px;
+  }
+
+  .hero-title {
+    line-height: 1.08;
+  }
+
+  .hero-pillars {
+    justify-content: center;
+    margin: 22px 0 28px;
+  }
+
+  .hero-actions {
+    position: relative;
+    z-index: 5;
+    justify-content: center;
+    gap: 14px;
+  }
+
+  /* Keep logo below the text and buttons */
+  .hero-visual {
+    position: relative;
+    z-index: 1;
+
+    width: 100%;
+    max-width: 440px;
+    min-height: 0;
+
+    margin: 0 auto;
+    padding: 12px 0 24px;
+  }
+
+  .hero-visual-tilt {
+    width: 100%;
+  }
+
+  .hero-glass-sphere {
+    width: min(76%, 330px);
+  }
+
+  .hero-infinity {
+    width: 100%;
+    max-width: 400px;
+  }
+
+  .hero-custom-logo {
+    width: min(100%, 360px);
+    max-height: 340px;
+    object-fit: contain;
+  }
+
+  .hero-services {
+    position: relative;
+    z-index: 3;
+    margin-top: 28px;
+  }
+}
+
+/* Tablet portrait */
+@media (min-width: 641px) and (max-width: 900px) {
+  .hero-section {
+    padding-top: 130px;
+    padding-bottom: 76px;
+  }
+
+  .hero-container {
+    gap: 48px;
+  }
+
+  .hero-title {
+    font-size: clamp(44px, 6vw, 62px);
+  }
+
+  .hero-visual {
+    max-width: 420px;
+  }
+
+  .hero-custom-logo {
+    max-height: 330px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .hero-section {
+    padding: 110px 5% 60px;
+  }
+
+  .hero-container {
+    gap: 34px;
+  }
+
+  .hero-content {
+    max-width: 100%;
+  }
+
+  .hero-title {
+    font-size: clamp(35px, 9vw, 46px);
+    line-height: 1.1;
+  }
+
+  .hero-pillars {
+    margin: 20px 0 26px;
+    gap: 10px;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    max-width: 340px;
+    margin: 0 auto;
+  }
+
+  .hero-primary-btn,
+  .hero-secondary-btn {
+    width: 100%;
+  }
+
+  .hero-visual {
+    max-width: 340px;
+    padding: 8px 0 18px;
+  }
+
+  .hero-glass-sphere {
+    width: 78%;
+  }
+
+  .hero-infinity {
+    max-width: 320px;
+  }
+
+  .hero-custom-logo {
+    width: min(100%, 300px);
+    max-height: 270px;
+  }
+
+  .hero-services {
+    margin-top: 4px;
+  }
+}
+
+/* Small mobile */
+@media (max-width: 380px) {
+  .hero-section {
+    padding: 100px 5% 50px;
+  }
+
+  .hero-container {
+    gap: 28px;
+  }
+
+  .hero-title {
+    font-size: 35px;
+  }
+
+  .hero-visual {
+    max-width: 290px;
+  }
+
+  .hero-custom-logo {
+    max-height: 235px;
+  }
+}
+
+/* Prevent visual elements from covering content */
+.hero-content,
+.hero-actions,
+.hero-visual,
+.hero-services {
+  isolation: isolate;
+}
+
+/* ==========================================
+   INIFLOW HERO - ACTUAL LOGO OVERLAP FIX
+========================================== */
+
+/* Tablet and smaller screens */
+@media (max-width: 900px) {
+
+  .hero-section {
+    min-height: auto;
+    height: auto;
+    padding: 125px 5% 65px;
+    display: block;
+  }
+
+  .hero-inner {
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .hero-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0;
+  }
+
+  /* Text area */
+  .hero-content {
+    position: relative;
+    z-index: 5;
+    width: 100%;
+    max-width: 680px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .hero-title {
+    line-height: 1.1;
+  }
+
+  .hero-pillars {
+    justify-content: center;
+    margin: 22px 0 28px;
+  }
+
+  .hero-actions {
+    position: relative;
+    z-index: 5;
+    justify-content: center;
+  }
+
+  /* Logo gets its own separate space */
+  .hero-visual {
+    position: relative;
+    z-index: 1;
+
+    display: grid;
+    place-items: center;
+
+    width: 100%;
+    max-width: 400px;
+    min-height: 0;
+    height: auto;
+
+    margin: 55px auto 0;
+    padding: 0 0 20px;
+    perspective: 1200px;
+  }
+
+  .hero-visual-tilt {
+    position: relative;
+    width: 100%;
+    height: auto;
+    display: grid;
+    place-items: center;
+  }
+
+  .hero-glass-sphere {
+    position: absolute;
+    width: min(76%, 300px);
+    aspect-ratio: 1;
+  }
+
+  .hero-infinity-float {
+    position: relative;
+    width: 100%;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+  }
+
+  .hero-infinity {
+    width: 100%;
+    max-width: 380px;
+    height: auto;
+  }
+
+  .hero-custom-logo {
+    display: block;
+    width: min(100%, 350px);
+    max-height: 260px;
+    height: auto;
+    object-fit: contain;
+  }
+
+  /* Services below logo */
+  .hero-services {
+    position: relative;
+    z-index: 3;
+    width: 100%;
+    max-width: 720px;
+    margin: 25px auto 0;
+  }
+}
+
+/* Tablet */
+@media (min-width: 641px) and (max-width: 900px) {
+
+  .hero-section {
+    padding-top: 135px;
+    padding-bottom: 75px;
+  }
+
+  .hero-container {
+    gap: 0;
+  }
+
+  .hero-title {
+    font-size: clamp(42px, 6vw, 58px);
+  }
+
+  .hero-visual {
+    max-width: 420px;
+    margin-top: 80px;
+  }
+
+  .hero-custom-logo {
+    width: min(100%, 370px);
+    max-height: 280px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+
+  .hero-section {
+    padding: 110px 5% 55px;
+  }
+
+  .hero-content {
+    width: 100%;
+  }
+
+  .hero-title {
+    font-size: clamp(34px, 9vw, 46px);
+    line-height: 1.12;
+  }
+
+  .hero-pillars {
+    justify-content: center;
+    gap: 10px;
+    margin: 20px 0 25px;
+    font-size: 16px;
+  }
+
+  .hero-actions {
+    width: 100%;
+    max-width: 340px;
+    margin: 0 auto;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hero-primary-btn,
+  .hero-secondary-btn {
+    width: 100%;
+  }
+
+  .hero-visual {
+    width: 100%;
+    max-width: 320px;
+    min-height: 0;
+    margin: 75px auto 0;
+    padding-bottom: 15px;
+  }
+
+  .hero-glass-sphere {
+    width: 78%;
+  }
+
+  .hero-infinity {
+    max-width: 300px;
+  }
+
+  .hero-custom-logo {
+    width: min(100%, 290px);
+    max-height: 220px;
+  }
+
+  .hero-services {
+    margin-top: 20px;
+  }
+}
+
+/* Small mobile */
+@media (max-width: 380px) {
+
+  .hero-section {
+    padding: 100px 5% 50px;
+  }
+
+  .hero-title {
+    font-size: 34px;
+  }
+
+  .hero-visual {
+    max-width: 280px;
+    margin-top: 98px;
+  }
+
+  .hero-custom-logo {
+    max-height: 195px;
+  }
+}
+
+/* ==========================================
+   INIFLOW HERO - COMPLETE RESPONSIVE SYSTEM
+   Desktop | Laptop | Tablet | Mobile
+========================================== */
+
+/* Prevent grid and text overflow */
+.hero-inner,
+.hero-container,
+.hero-content,
+.hero-visual {
+  min-width: 0;
+}
+
+.hero-title {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-break: normal;
+  text-wrap: balance;
+}
+
+.hero-title-line {
+  max-width: 100%;
+}
+
+.hero-pillars {
+  line-height: 1.5;
+}
+
+/* Large desktop */
+@media (min-width: 1440px) {
+  .hero-section {
+    padding-left: 7%;
+    padding-right: 7%;
+  }
+
+  .hero-container {
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: 64px;
+  }
+
+  .hero-content {
+    max-width: 700px;
+  }
+
+  .hero-title {
+    font-size: clamp(68px, 5.2vw, 82px);
+  }
+}
+
+/* Laptop */
+@media (min-width: 901px) and (max-width: 1200px) {
+  .hero-section {
+    padding: 125px 5% 65px;
+  }
+
+  .hero-container {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    gap: 25px;
+  }
+
+  .hero-title {
+    font-size: clamp(42px, 5vw, 60px);
+  }
+
+  .hero-visual {
+    min-height: 360px;
+  }
+
+  .hero-custom-logo {
+    width: min(100%, 380px);
+    max-height: 350px;
+  }
+
+  .hero-services {
+    max-width: 850px;
+  }
+}
+
+/* Tablet and below */
+@media (max-width: 900px) {
+  .hero-section {
+    min-height: auto;
+    height: auto;
+    padding: 125px 6% 65px;
+    display: block;
+  }
+
+  .hero-inner {
+    width: 100%;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  .hero-container,
+  .hero-container.is-logo-hidden {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  .hero-content,
+  .hero-container.is-logo-hidden .hero-content {
+    width: 100%;
+    max-width: 700px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .hero-eyebrow {
+    display: block;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+
+  .hero-title {
+    width: 100%;
+    margin: 0 auto;
+    font-size: clamp(44px, 6.5vw, 62px);
+    line-height: 1.08;
+    letter-spacing: -0.045em;
+    text-align: center;
+  }
+
+  .hero-title-line {
+    width: 100%;
+    text-align: center;
+  }
+
+  .hero-pillars {
+    justify-content: center;
+    margin: 22px 0 28px;
+    font-size: clamp(16px, 2.2vw, 20px);
+    text-align: center;
+  }
+
+  .hero-actions {
+    justify-content: center;
+    align-items: center;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+
+  .hero-primary-btn,
+  .hero-secondary-btn {
+    width: auto;
+    min-width: 175px;
+  }
+
+  .hero-visual {
+    width: 100%;
+    max-width: 420px;
+    min-height: 0;
+    margin: 55px auto 0;
+    padding: 0 0 20px;
+  }
+
+  .hero-visual-tilt {
+    width: 100%;
+  }
+
+  .hero-glass-sphere {
+    width: min(78%, 320px);
+  }
+
+  .hero-custom-logo {
+    width: min(100%, 360px);
+    max-height: 300px;
+    height: auto;
+    object-fit: contain;
+  }
+
+  .hero-infinity {
+    max-width: 380px;
+  }
+
+  .hero-services {
+    width: 100%;
+    max-width: 760px;
+    margin: 35px auto 0;
+  }
+}
+
+/* Small tablets and large phones */
+@media (max-width: 640px) {
+  .hero-section {
+    padding: 115px 6% 55px;
+  }
+
+  .hero-content {
+    max-width: 540px;
+  }
+
+  .hero-title {
+    font-size: clamp(37px, 8.2vw, 48px);
+    line-height: 1.1;
+    letter-spacing: -0.04em;
+  }
+
+  .hero-eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+  }
+
+  .hero-pillars {
+    justify-content: center;
+    gap: 9px;
+    margin: 20px 0 25px;
+    font-size: 16px;
+  }
+
+  .hero-pillar {
+    gap: 9px;
+  }
+
+  .hero-actions {
+    width: 100%;
+    max-width: 390px;
+    margin: 0 auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .hero-primary-btn,
+  .hero-secondary-btn {
+    flex: 1 1 165px;
+    min-width: 0;
+    min-height: 48px;
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+
+  .hero-visual {
+    max-width: 340px;
+    margin-top: 42px;
+  }
+
+  .hero-custom-logo {
+    max-width: 300px;
+    max-height: 250px;
+  }
+
+  .hero-glass-sphere {
+    width: 80%;
+  }
+
+  .hero-services {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px 2px;
+    padding: 14px 8px;
+    margin-top: 28px;
+  }
+
+  .hero-service {
+    min-width: 0;
+    padding: 9px 3px;
+    font-size: 12px;
+    gap: 7px;
+  }
+
+  .hero-service-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .hero-service + .hero-service::before {
+    display: none;
+  }
+}
+
+/* Mobile phones */
+@media (max-width: 480px) {
+  .hero-section {
+    padding: 108px 5% 50px;
+  }
+
+  .hero-content {
+    width: 100%;
+    text-align: center;
+  }
+
+  .hero-title {
+    font-size: clamp(35px, 8.7vw, 42px);
+    line-height: 1.12;
+    letter-spacing: -0.045em;
+  }
+
+  .hero-title-line {
+    padding-bottom: 0.06em;
+  }
+
+  .hero-pillars {
+    font-size: 15px;
+    gap: 8px;
+    margin: 18px 0 24px;
+  }
+
+  .hero-actions {
+    max-width: 320px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hero-primary-btn,
+  .hero-secondary-btn {
+    width: 100%;
+    flex: none;
+    min-height: 48px;
+  }
+
+  .hero-visual {
+    max-width: 300px;
+    margin-top: 38px;
+  }
+
+  .hero-custom-logo {
+    max-width: 270px;
+    max-height: 225px;
+  }
+
+  .hero-services {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: 25px;
+    border-radius: 18px;
+  }
+
+  .hero-service {
+    font-size: 11px;
+  }
+}
+
+/* Very small phones */
+@media (max-width: 360px) {
+  .hero-section {
+    padding: 100px 5% 45px;
+  }
+
+  .hero-title {
+    font-size: 34px;
+    letter-spacing: -1.5px;
+  }
+
+  .hero-pillars {
+    font-size: 14px;
+  }
+
+  .hero-visual {
+    max-width: 260px;
+    margin-top: 32px;
+  }
+
+  .hero-custom-logo {
+    max-height: 200px;
+  }
+
+  .hero-services {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hero-service {
+    font-size: 12px;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .hero-infinity-float {
+    animation: none;
+  }
+}
+
+/* =========================================
+   HERO SOCIAL MEDIA LINKS
+========================================= */
+
+.hero-social-links {
+  position: relative;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-top: 24px;
+}
+
+.hero-social-btn {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(10, 108, 255, 0.16);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #0878f9;
+  text-decoration: none;
+  box-shadow: 0 8px 22px rgba(20, 90, 180, 0.10);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease,
+    color 0.3s ease,
+    background 0.3s ease;
+}
+
+.hero-social-btn:hover {
+  transform: translateY(-5px);
+  color: #ffffff;
+  background: linear-gradient(135deg, #1f8bff, #0050e6);
+  box-shadow: 0 12px 25px rgba(10, 108, 255, 0.25);
+}
+
+.hero-social-btn.instagram:hover {
+  background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
+}
+
+.hero-social-btn.youtube:hover {
+  background: #ff0033;
+}
+
+.hero-social-btn:focus-visible {
+  outline: 3px solid rgba(10, 108, 255, 0.4);
+  outline-offset: 4px;
+}
+
+@media (max-width: 900px) {
+  .hero-social-links {
+    justify-content: center;
+    margin-top: 22px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-social-links {
+    justify-content: center;
+    gap: 14px;
+    margin-top: 20px;
+  }
+
+  .hero-social-btn {
+    width: 43px;
+    height: 43px;
+    flex-basis: 43px;
+    border-radius: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-social-btn {
+    transition: none;
+  }
+
+  .hero-social-btn:hover {
+    transform: none;
+  }
+}

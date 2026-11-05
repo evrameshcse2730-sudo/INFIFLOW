@@ -1,5 +1,7 @@
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
+
 import {
   motion,
   useMotionValue,
@@ -7,6 +9,7 @@ import {
   useSpring,
   useTransform,
 } from "framer-motion";
+
 import {
   ArrowDown,
   ArrowRight,
@@ -17,6 +20,7 @@ import {
   Video,
   Zap,
 } from "lucide-react";
+
 import { db } from "../../firebase/firebase";
 import "./Hero.css";
 
@@ -65,7 +69,11 @@ const titleVariants = {
 
 const fadeUpVariants = {
   hidden: { opacity: 0, y: 24 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: EASE } },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.7, ease: EASE },
+  },
 };
 
 const fadeOnlyVariants = {
@@ -80,7 +88,11 @@ const lineRevealVariants = {
 
 const visualVariants = {
   hidden: { opacity: 0, scale: 0.85 },
-  show: { opacity: 1, scale: 1, transition: { duration: 1.2, ease: EASE } },
+  show: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 1.2, ease: EASE },
+  },
 };
 
 const servicesVariants = {
@@ -96,12 +108,66 @@ const servicesVariants = {
   },
 };
 
-const cleanText = (value) => (typeof value === "string" ? value.trim() : "");
+const cleanText = (value) =>
+  typeof value === "string" ? value.trim() : "";
 
 const safeUrl = (value) => {
   const url = cleanText(value);
-  return /^https:\/\//i.test(url) ? url : "";
+
+  try {
+    const parsed = new URL(url);
+
+    if (!["https:", "http:"].includes(parsed.protocol)) {
+      return "";
+    }
+
+    return parsed.href;
+  } catch {
+    return "";
+  }
 };
+
+// Instagram SVG icon
+function InstagramIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="22"
+      height="22"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle
+        cx="17.5"
+        cy="6.5"
+        r="1"
+        fill="currentColor"
+        stroke="none"
+      />
+    </svg>
+  );
+}
+
+// YouTube SVG icon
+function YoutubeIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="23"
+      height="23"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8ZM9.6 15.6V8.4l6.3 3.6-6.3 3.6Z" />
+    </svg>
+  );
+}
 
 function buildHeroContent(data) {
   const settings = data || {};
@@ -110,28 +176,36 @@ function buildHeroContent(data) {
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
+
   const accent = cleanText(settings.heroAccent);
   const hasCustomTitle = titleLines.length > 0 || Boolean(accent);
 
   const pillarsText = cleanText(settings.heroDescription);
+
   const pillars = pillarsText
     ? pillarsText.split("•").map((item) => item.trim()).filter(Boolean)
     : HERO_DEFAULTS.pillars;
 
   const rawOverlay = settings.heroOverlay;
+
   const overlayNumber =
     rawOverlay === "" || rawOverlay === null || rawOverlay === undefined
       ? HERO_DEFAULTS.overlay
       : Number(rawOverlay);
+
   const overlay = Number.isFinite(overlayNumber)
     ? Math.min(90, Math.max(0, overlayNumber))
     : HERO_DEFAULTS.overlay;
 
   const logoUrl = safeUrl(settings.heroLogoUrl);
+
   let logoMode = LOGO_MODES.includes(settings.heroLogoMode)
     ? settings.heroLogoMode
     : "default";
-  if (logoMode === "image" && !logoUrl) logoMode = "default";
+
+  if (logoMode === "image" && !logoUrl) {
+    logoMode = "default";
+  }
 
   return {
     eyebrow: cleanText(settings.heroEyebrow) || HERO_DEFAULTS.eyebrow,
@@ -161,11 +235,13 @@ function InfinityMark() {
           <stop offset="70%" stopColor="#0a5cff" />
           <stop offset="100%" stopColor="#0040d8" />
         </linearGradient>
+
         <linearGradient id="heroInfShade" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#ffffff" stopOpacity="0" />
           <stop offset="55%" stopColor="#001a66" stopOpacity="0" />
           <stop offset="100%" stopColor="#001a66" stopOpacity="0.35" />
         </linearGradient>
+
         <filter id="heroInfGlow" x="-20%" y="-40%" width="140%" height="180%">
           <feGaussianBlur stdDeviation="14" />
         </filter>
@@ -179,6 +255,7 @@ function InfinityMark() {
         opacity="0.35"
         filter="url(#heroInfGlow)"
       />
+
       <path
         d={INFINITY_PATH}
         fill="none"
@@ -186,6 +263,7 @@ function InfinityMark() {
         strokeWidth="34"
         strokeLinejoin="round"
       />
+
       <path
         d={INFINITY_PATH}
         fill="none"
@@ -193,6 +271,7 @@ function InfinityMark() {
         strokeWidth="34"
         strokeLinejoin="round"
       />
+
       <path
         d={INFINITY_PATH}
         fill="none"
@@ -201,6 +280,7 @@ function InfinityMark() {
         strokeLinejoin="round"
         transform="translate(-3 -9)"
       />
+
       <path
         className="hero-inf-sheen"
         d={INFINITY_PATH}
@@ -234,12 +314,18 @@ function Hero() {
   const [failedVideoUrl, setFailedVideoUrl] = useState("");
 
   const saveData = useMemo(
-    () => typeof navigator !== "undefined" && Boolean(navigator.connection?.saveData),
+    () =>
+      typeof navigator !== "undefined" &&
+      Boolean(navigator.connection?.saveData),
     []
   );
 
+  // Listen to website settings in Firestore
   useEffect(() => {
-    const timer = setTimeout(() => setSettingsReady(true), SETTINGS_TIMEOUT_MS);
+    const timer = setTimeout(
+      () => setSettingsReady(true),
+      SETTINGS_TIMEOUT_MS
+    );
 
     const unsubscribe = onSnapshot(
       doc(db, "settings", "website"),
@@ -259,13 +345,21 @@ function Hero() {
     };
   }, []);
 
-  const hero = useMemo(() => buildHeroContent(settingsData), [settingsData]);
+  const hero = useMemo(
+    () => buildHeroContent(settingsData),
+    [settingsData]
+  );
+
+  // Social media URLs from Admin Panel
+  const instagramUrl = safeUrl(settingsData?.instagram);
+  const youtubeUrl = safeUrl(settingsData?.youtube);
 
   const showVideo =
     Boolean(hero.videoUrl) &&
     !reduceMotion &&
     !saveData &&
     failedVideoUrl !== hero.videoUrl;
+
   const videoIsReady = showVideo && readyVideoUrl === hero.videoUrl;
   const showPoster = Boolean(hero.posterUrl) && !videoIsReady;
   const hasMedia = showVideo || Boolean(hero.posterUrl);
@@ -273,20 +367,31 @@ function Hero() {
 
   const attachVideo = useCallback((element) => {
     videoRef.current = element;
+
     if (!element) return;
+
     element.defaultMuted = true;
     element.muted = true;
+
     const playPromise = element.play?.();
     if (playPromise?.catch) playPromise.catch(() => {});
   }, []);
 
   useEffect(() => {
     const section = sectionRef.current;
-    if (!showVideo || !section || !("IntersectionObserver" in window)) return undefined;
+
+    if (
+      !showVideo ||
+      !section ||
+      !("IntersectionObserver" in window)
+    ) {
+      return undefined;
+    }
 
     const observer = new IntersectionObserver(([entry]) => {
       const video = videoRef.current;
       if (!video) return;
+
       if (entry.isIntersecting) {
         const playPromise = video.play();
         if (playPromise?.catch) playPromise.catch(() => {});
@@ -296,13 +401,25 @@ function Hero() {
     });
 
     observer.observe(section);
+
     return () => observer.disconnect();
   }, [showVideo, hero.videoUrl]);
 
+  // Mouse interaction
   const pointerX = useMotionValue(0);
   const pointerY = useMotionValue(0);
-  const smoothX = useSpring(pointerX, { stiffness: 60, damping: 18, mass: 0.6 });
-  const smoothY = useSpring(pointerY, { stiffness: 60, damping: 18, mass: 0.6 });
+
+  const smoothX = useSpring(pointerX, {
+    stiffness: 60,
+    damping: 18,
+    mass: 0.6,
+  });
+
+  const smoothY = useSpring(pointerY, {
+    stiffness: 60,
+    damping: 18,
+    mass: 0.6,
+  });
 
   const rotateY = useTransform(smoothX, [-1, 1], [-12, 12]);
   const rotateX = useTransform(smoothY, [-1, 1], [10, -10]);
@@ -312,7 +429,9 @@ function Hero() {
   const handlePointerMove = useCallback(
     (event) => {
       if (reduceMotion || event.pointerType !== "mouse") return;
+
       const rect = event.currentTarget.getBoundingClientRect();
+
       pointerX.set(((event.clientX - rect.left) / rect.width) * 2 - 1);
       pointerY.set(((event.clientY - rect.top) / rect.height) * 2 - 1);
     },
@@ -327,9 +446,12 @@ function Hero() {
   const fadeUp = reduceMotion ? fadeOnlyVariants : fadeUpVariants;
   const lineReveal = reduceMotion ? fadeOnlyVariants : lineRevealVariants;
   const visualIn = reduceMotion ? fadeOnlyVariants : visualVariants;
+
   const revealState = settingsReady ? "show" : "hidden";
 
-  const headingLabel = [...hero.titleLines, hero.accent].filter(Boolean).join(" ");
+  const headingLabel = [...hero.titleLines, hero.accent]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <section
@@ -346,7 +468,11 @@ function Hero() {
           style={{ "--hero-overlay": hero.overlay / 100 }}
         >
           {showPoster && (
-            <img className="hero-media-poster" src={hero.posterUrl} alt="" />
+            <img
+              className="hero-media-poster"
+              src={hero.posterUrl}
+              alt=""
+            />
           )}
 
           {showVideo && (
@@ -393,10 +519,12 @@ function Hero() {
             <stop offset="100%" stopColor="#0a6cff" stopOpacity="0.16" />
           </linearGradient>
         </defs>
+
         <path
           d="M0,240 C240,170 420,300 720,250 C1020,200 1200,120 1440,170 L1440,320 L0,320 Z"
           fill="url(#heroWaveFill)"
         />
+
         <path
           d="M0,280 C300,230 520,320 820,280 C1100,245 1260,210 1440,240 L1440,320 L0,320 Z"
           fill="#ffffff"
@@ -423,7 +551,10 @@ function Hero() {
             >
               {hero.titleLines.map((line, index) => (
                 <span className="hero-title-line" key={`line-${index}`}>
-                  <motion.span className="hero-title-inner" variants={lineReveal}>
+                  <motion.span
+                    className="hero-title-inner"
+                    variants={lineReveal}
+                  >
                     {line}
                   </motion.span>
                 </span>
@@ -431,8 +562,13 @@ function Hero() {
 
               {hero.accent && (
                 <span className="hero-title-line">
-                  <motion.span className="hero-title-inner" variants={lineReveal}>
-                    <span className="hero-gradient-text">{hero.accent}</span>
+                  <motion.span
+                    className="hero-title-inner"
+                    variants={lineReveal}
+                  >
+                    <span className="hero-gradient-text">
+                      {hero.accent}
+                    </span>
                   </motion.span>
                 </span>
               )}
@@ -441,8 +577,16 @@ function Hero() {
             {hero.pillars.length > 0 && (
               <motion.p className="hero-pillars" variants={fadeUp}>
                 {hero.pillars.map((pillar, index) => (
-                  <span className="hero-pillar" key={`${pillar}-${index}`}>
-                    {index > 0 && <span className="hero-pillar-dot" aria-hidden="true" />}
+                  <span
+                    className="hero-pillar"
+                    key={`${pillar}-${index}`}
+                  >
+                    {index > 0 && (
+                      <span
+                        className="hero-pillar-dot"
+                        aria-hidden="true"
+                      />
+                    )}
                     {pillar}
                   </span>
                 ))}
@@ -462,6 +606,41 @@ function Hero() {
                 <ArrowRight size={17} className="hero-btn-arrow" />
               </a>
             </motion.div>
+
+            {/* Admin Panel Social Media Links */}
+            {(instagramUrl || youtubeUrl) && (
+              <motion.div
+                className="hero-social-links"
+                variants={fadeUp}
+                aria-label="Social media links"
+              >
+                {instagramUrl && (
+                  <a
+                    href={instagramUrl}
+                    className="hero-social-btn instagram"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Visit INIFLOW on Instagram"
+                    title="Instagram"
+                  >
+                    <InstagramIcon />
+                  </a>
+                )}
+
+                {youtubeUrl && (
+                  <a
+                    href={youtubeUrl}
+                    className="hero-social-btn youtube"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Visit INIFLOW on YouTube"
+                    title="YouTube"
+                  >
+                    <YoutubeIcon />
+                  </a>
+                )}
+              </motion.div>
+            )}
           </motion.div>
 
           {showLogo && (
@@ -496,7 +675,11 @@ function Hero() {
           aria-label="What we do"
         >
           {services.map(({ icon: Icon, label }) => (
-            <motion.li className="hero-service" key={label} variants={fadeUp}>
+            <motion.li
+              className="hero-service"
+              key={label}
+              variants={fadeUp}
+            >
               <span className="hero-service-icon">
                 <Icon size={26} strokeWidth={1.6} />
               </span>
@@ -511,7 +694,11 @@ function Hero() {
         className="hero-scroll"
         aria-label="Scroll to explore"
         animate={reduceMotion ? undefined : { y: [0, 6, 0] }}
-        transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+        transition={{
+          duration: 1.8,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
       >
         <ArrowDown size={16} />
       </motion.a>

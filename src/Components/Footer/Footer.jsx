@@ -56,33 +56,13 @@ function Footer() {
       >
         <div className="footer-main">
           <motion.div className="footer-brand" variants={fadeUp}>
-            <a href="#home" className="footer-logo" aria-label="INIFLOW home">
-              <svg className="footer-logo-mark" viewBox="-30 -20 460 240" aria-hidden="true">
-                <defs>
-                  <linearGradient id="footerLogoGradient" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stopColor="#5fd4ff" />
-                    <stop offset="40%" stopColor="#1f8bff" />
-                    <stop offset="100%" stopColor="#0040d8" />
-                  </linearGradient>
-                </defs>
-                <path
-                  d={INFINITY_PATH}
-                  fill="none"
-                  stroke="url(#footerLogoGradient)"
-                  strokeWidth="44"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d={INFINITY_PATH}
-                  fill="none"
-                  stroke="rgba(255, 255, 255, 0.5)"
-                  strokeWidth="10"
-                  strokeLinejoin="round"
-                  transform="translate(-3 -10)"
-                />
-              </svg>
-              <span className="footer-logo-text">INIFLOW</span>
-            </a>
+           <a href="#home" className="footer-logo" aria-label="INIFLOW home">
+  <img
+    src="https://res.cloudinary.com/tezenm9e/image/upload/v1793765157/fyfx1wgmvxgm0wqxst78.png"
+    alt="INIFLOW"
+    className="footer-logo-image"
+  />
+</a>
 
             <p className="footer-description">
               Turning creative ideas into meaningful digital
